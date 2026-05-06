@@ -7,8 +7,12 @@ public class Team24Unreal : ModuleRules
 	public Team24Unreal(ReadOnlyTargetRules Target) : base(Target)
 	{
 		PCHUsage = PCHUsageMode.UseExplicitOrSharedPCHs;
-	
-		PublicDependencyModuleNames.AddRange(new string[] { "Core", "CoreUObject", "Engine", "InputCore", "EnhancedInput" });
+
+		PublicDependencyModuleNames.AddRange(new string[]
+		{
+			"Core", "CoreUObject", "Engine", "InputCore", "EnhancedInput", "ChaosVehicles", "PhysicsCore", "Landscape",
+			"RenderCore", "RHI", "ImageWrapper"
+		});
 
 		PrivateDependencyModuleNames.AddRange(new string[] {  });
 

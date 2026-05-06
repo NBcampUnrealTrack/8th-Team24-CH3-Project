@@ -22,3 +22,8 @@ Saved/
 # Visual Studio cache
 .vs/
 *.ipch
+.vsconfig
+
+# Jetbrain Rider
+.idea/
+*.DotSettings.user  
