@@ -11,7 +11,7 @@ class UBorder;
 class UTextureRenderTarget2D;
 
 UCLASS()
-class DIGITALTWINNBC_API USensorViewWidget : public UUserWidget
+class TEAM24UNREAL_API USensorViewWidget : public UUserWidget
 {
 	GENERATED_BODY()
 
