@@ -10,7 +10,7 @@
 class UTexture2D;
 
 UCLASS()
-class DIGITALTWINNBC_API ULidarBevRenderer : public UObject
+class TEAM24UNREAL_API ULidarBevRenderer : public UObject
 {
 	GENERATED_BODY()
 

@@ -13,7 +13,7 @@ class UMaterialInterface;
 class UMaterialInstanceDynamic;
 
 UCLASS(ClassGroup = (Sensor), meta = (BlueprintSpawnableComponent), BlueprintType)
-class DIGITALTWINNBC_API UCameraSensorComponent : public USceneComponent
+class TEAM24UNREAL_API UCameraSensorComponent : public USceneComponent
 {
 	GENERATED_BODY()
 

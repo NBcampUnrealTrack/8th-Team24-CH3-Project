@@ -11,7 +11,7 @@ class ULidarBevRenderer;
 class UTextureRenderTarget2D;
 
 UCLASS(ClassGroup = (Sensor), meta = (BlueprintSpawnableComponent), BlueprintType)
-class DIGITALTWINNBC_API ULidarSensorComponent : public USceneComponent
+class TEAM24UNREAL_API ULidarSensorComponent : public USceneComponent
 {
 	GENERATED_BODY()
 
