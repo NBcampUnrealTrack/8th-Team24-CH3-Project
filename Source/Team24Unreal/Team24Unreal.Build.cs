@@ -11,8 +11,8 @@ public class Team24Unreal : ModuleRules
 		PublicDependencyModuleNames.AddRange(new string[]
 		{
 			"Core", "CoreUObject", "Engine", "InputCore", "EnhancedInput", "ChaosVehicles", "PhysicsCore", "Landscape",
-			"RenderCore", "RHI", "ImageWrapper"
-		});
+			"RenderCore", "RHI", "ImageWrapper", "UMG"
+        });
 
 		PrivateDependencyModuleNames.AddRange(new string[] {  });
 
