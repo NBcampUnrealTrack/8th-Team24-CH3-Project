@@ -1,16 +1,15 @@
 // Copyright Team24. All Rights Reserved.
 
 #include "Component/SplineFollowerComponent.h"
-#include "Team24Unreal/Team24Unreal.h" //카테고리 쓸려면 이 헤더가 필요함
+#include "Team24Unreal/Team24Unreal.h" //전역 카테고리를 사용하기 위한 헤더파일
 #include "Actor/RoadActor.h"
 #include "Components/SplineComponent.h"
-
-// #include "GameFramework/ATeam24Pawn.h"
+#include "Vehicle/Base/Team24VehiclePawn.h"
 
 // EngineUtils.h: TActorIterator (월드의 모든 액터 순회)
 #include "EngineUtils.h"
 
-// 이 파일 전용 로그 카테고리 정의 (전역으로 이미 카테고리를 생성해서 주석처리함)
+// (Team24Unreal.h에 LogTeam24로 사용 가능한 로그 카테고리를 구현)
 // DEFINE_LOG_CATEGORY_STATIC(LogTeam24, Log, All);
 
 // 생성자
@@ -29,13 +28,13 @@ void USplineFollowerComponent::BeginPlay()
 	Super::BeginPlay();
 
 	// 이 컴포넌트의 주인을 Pawn으로 캐스팅
-
-	/* OwnerPawn = Cast<ATeam24Pawn>(GetOwner());
+	// 주석해제
+	OwnerPawn = Cast<ATeam24VehiclePawn>(GetOwner());
 	if (!OwnerPawn.IsValid())
 	{
 		UE_LOG(LogTeam24, Error, TEXT("Owner is not a Pawn."));
 		return;
-	} */
+	}
 
 	// 1. 월드에서 따라갈 RoadActor 찾기
 	TargetRoad = FindBestRoadActor();
@@ -279,6 +278,22 @@ void USplineFollowerComponent::ApplySpeedCommand(float TargetSpeed, float Curren
 	//          else { Pawn->DoThrottle(0); Pawn->DoBrake(0); }
 	// =====================================================
 
+	//TODO 예시로 구현
+	ATeam24VehiclePawn*Pawn = Cast<ATeam24VehiclePawn>(OwnerPawn);
+	if (Cmd > CoastDeadzone)
+	{
+		Pawn->DoThrottle(Cmd);
+	}
+	else if (Cmd < -CoastDeadzone)
+	{
+		Pawn->DoBrake(-Cmd);
+	}
+	else
+	{
+		Pawn->DoThrottle(0); Pawn->DoBrake(0);
+	}
+	//
+
 	if (bDebugLogCommands)
 	{
 		if (Cmd > CoastDeadzone)
@@ -308,6 +323,11 @@ void USplineFollowerComponent::ApplySteeringCommand(float Steering)
 	//          Pawn->DoSteering(Steering);
 	// =====================================================
 
+	//ToDO 구현
+	ATeam24VehiclePawn*Pawn = Cast<ATeam24VehiclePawn>(OwnerPawn);
+	Pawn->DoSteering(Steering);
+	//
+
 	if (bDebugLogCommands)
 	{
 		UE_LOG(LogTeam24, VeryVerbose, TEXT("[STEER] %.3f"), Steering);
@@ -324,6 +344,12 @@ void USplineFollowerComponent::HandlePathCompleted()
 	//          Pawn->DoBrakeStart();
 	// =====================================================
 
+	//ToDO 구현
+	ATeam24VehiclePawn*Pawn = Cast<ATeam24VehiclePawn>(OwnerPawn);
+	Pawn->DoThrottle(0.f);
+	Pawn->DoBrakeStart();
+	//
+	
 	UE_LOG(LogTeam24, Log, TEXT("Path completed - vehicle should stop."));
 	SetComponentTickEnabled(false); // Tick 끔
 }

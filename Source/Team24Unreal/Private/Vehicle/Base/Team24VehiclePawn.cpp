@@ -12,6 +12,7 @@
 #include "ChaosWheeledVehicleMovementComponent.h"
 #include "TimerManager.h"
 //팀원 코드 헤더 추가
+#include"Component/SplineFollowerComponent.h"
 
 ATeam24VehiclePawn::ATeam24VehiclePawn()
 {
@@ -58,7 +59,7 @@ ATeam24VehiclePawn::ATeam24VehiclePawn()
 	//LidarSensor->SetupAttachment(GetMesh());
 	//LidarSensor->SetRelativeLocation(FVector(0.0f, 0.0f, 180.0f));
 
-	//SplineFollower = CreateDefaultSubobject<USplineFollowerComponent>(TEXT("SplineFollower"));
+	SplineFollower = CreateDefaultSubobject<USplineFollowerComponent>(TEXT("SplineFollower"));
 
 	//DataLogger = CreateDefaultSubobject<UAgentDataLogger>(TEXT("DataLogger"));
 
