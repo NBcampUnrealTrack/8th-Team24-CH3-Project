@@ -46,11 +46,11 @@ private:
 	// ---------------------------------------------------------------------------
 
 	//팀원 코드 합칠시 주석해제
-	//UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category ="Components", meta = (AllowPrivateAccess = "true"))
-	//TObjectPtr<UCameraSensorComponent> CameraSensor; //카메라 센서
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category ="Components", meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<UCameraSensorComponent> CameraSensor; //카메라 센서
 
-	//UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category ="Components", meta = (AllowPrivateAccess = "true"))
-	//TObjectPtr<ULidarSensorComponent> LidarSensor; //라이다 센서
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category ="Components", meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<ULidarSensorComponent> LidarSensor; //라이다 센서
 
 	//UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category ="Components", meta = (AllowPrivateAccess = "true"))
 	//TObjectPtr<UAgentDataLogger> DataLogger; //데이터 로거
@@ -145,8 +145,8 @@ public:
 	FORCEINLINE UCameraComponent* GetBackCamera() const { return BackCamera; }
 	FORCEINLINE UChaosWheeledVehicleMovementComponent* GetChaosVehicleMovement() const { return ChaosVehicleMovement; }
 	//팀원 코드 합칠시 주석해제
-	//FORCEINLINE UCameraSensorComponent* GetCameraSensor() const { return CameraSensor; }
-	//FORCEINLINE ULidarSensorComponent* GetLidarSensor() const { return LidarSensor; }
+	FORCEINLINE UCameraSensorComponent* GetCameraSensor() const { return CameraSensor; }
+	FORCEINLINE ULidarSensorComponent* GetLidarSensor() const { return LidarSensor; }
 	//FORCEINLINE UAgentDataLogger* GetDataLogger() const { return DataLogger; }
 
 protected:

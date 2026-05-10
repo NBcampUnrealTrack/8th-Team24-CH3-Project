@@ -11,8 +11,12 @@
 #include "InputActionValue.h"
 #include "ChaosWheeledVehicleMovementComponent.h"
 #include "TimerManager.h"
+#include "System/Team24PlayerController.h"
 //팀원 코드 헤더 추가
 #include"Component/SplineFollowerComponent.h"
+#include"Sensor/CameraSensorComponent.h"
+#include"Sensor/LidarSensorComponent.h"
+
 
 ATeam24VehiclePawn::ATeam24VehiclePawn()
 {
@@ -52,12 +56,12 @@ ATeam24VehiclePawn::ATeam24VehiclePawn()
 
 
 	//팀원 코드오면 주석해제
-	//CameraSensor = CreateDefaultSubobject<UCameraSensorComponent>(TEXT("CameraSensor"));
-	//CameraSensor->SetupAttachment(GetMesh());
+	CameraSensor = CreateDefaultSubobject<UCameraSensorComponent>(TEXT("CameraSensor"));
+	CameraSensor->SetupAttachment(GetMesh());
 
-	//LidarSensor = CreateDefaultSubobject<ULidarSensorComponent>(TEXT("LidarSensor"));
-	//LidarSensor->SetupAttachment(GetMesh());
-	//LidarSensor->SetRelativeLocation(FVector(0.0f, 0.0f, 180.0f));
+	LidarSensor = CreateDefaultSubobject<ULidarSensorComponent>(TEXT("LidarSensor"));
+	LidarSensor->SetupAttachment(GetMesh());
+	LidarSensor->SetRelativeLocation(FVector(0.0f, 0.0f, 180.0f));
 
 	SplineFollower = CreateDefaultSubobject<USplineFollowerComponent>(TEXT("SplineFollower"));
 
@@ -204,31 +208,30 @@ void ATeam24VehiclePawn::DoResetVehicle()
 void ATeam24VehiclePawn::DoToggleSensorView()
 {
 	//1인칭 카메라가 보이게하는 로직 (팀원 코드 합칠시 변경)
-	//ADigitalTwinNbcPlayerController* PC = Cast<ADigitalTwinNbcPlayerController>(GetController());
-	//if (PC == nullptr)
-	//	return;
-	//
-	//UTextureRenderTarget2D* CamRT = CameraSensor ? CameraSensor->GetRednerTarget() : nullptr;
-	//PC->ToggleSensorView(CamRT);
+	ATeam24PlayerController* PC = Cast<ATeam24PlayerController>(GetController());
+	if (PC == nullptr)
+		return;
+
+	UTextureRenderTarget2D* CamRT = CameraSensor ? CameraSensor->GetRenderTarget() : nullptr;
+	PC->ToggleSensorView(CamRT);
 }
 
 void ATeam24VehiclePawn::DoToggleLidarView()
 {
 	//Lidar센서가 보이게 하는 로직(팀원 코드 합칠시 변경)
-	//ADigitalTwinNbcPlayerController* PC = Cast<ADigitalTwinNbcPlayerController>(GetController());
-	//if (PC == nullptr)
-	//	return;
-	//
-	//UTexture2D* LidarRT = LidarSensor ? LidarSensor->GetBevRenderTarget() : nullptr;
-	//PC->ToggleLidarView(LidarRT);
+	ATeam24PlayerController* PC = Cast<ATeam24PlayerController>(GetController());
+	if (PC == nullptr)
+		return;
 
-	//if (LidarSensor)
-	//{
-	//	if (PC->IsLidarViewVisible())
-	//		LidarSensor->StartScan();
-	//	else
-	//		LidarSensor->StopScan();
-	//}
+	UTexture2D* LidarRT = LidarSensor ? LidarSensor->GetBevRenderTarget() : nullptr;
+	PC->ToggleLidarView(LidarRT);
+	if (LidarSensor)
+	{
+		if (PC->IsLidarViewVisible())
+			LidarSensor->StartScan();
+		else
+			LidarSensor->StopScan();
+	}
 }
 
 void ATeam24VehiclePawn::DoSteering(float SteeringValue)

@@ -10,7 +10,7 @@ class UInputMappingContext;
 class ATeam24VehiclePawn;
 class UTextureRenderTarget2D;
 class UTexture2D;
-//class USensorViewWidget;
+class USensorViewWidget;
 
 UCLASS()
 class TEAM24UNREAL_API ATeam24PlayerController : public APlayerController
@@ -32,8 +32,8 @@ private:
 	TSubclassOf<ATeam24VehiclePawn> VehiclePawnClass;
 
 	//팀원 코드를 합친 후 주석해제
-	//UPROPERTY(EditAnywhere, Category="Vehicle|UI")
-	//TSubclassOf<USensorViewWidget> SensorViewWidgetClass;
+	UPROPERTY(EditAnywhere, Category="Vehicle|UI")
+	TSubclassOf<USensorViewWidget> SensorViewWidgetClass;
 
 	// ---------------------------------------------------------------------------
 	// 멤버 변수 선언 (언리얼 5 국룰: TObjectPtr 사용)
@@ -43,8 +43,8 @@ private:
 	TObjectPtr<ATeam24VehiclePawn> VehiclePawn;
 
 	//팀원 코드를 합친 후 주석해제
-	//UPROPERTY()
-	//TObjectPtr<USensorViewWidget> SensorViewWidget;
+	UPROPERTY()
+	TObjectPtr<USensorViewWidget> SensorViewWidget;
 
 
 	// ---------------------------------------------------------------------------
@@ -82,7 +82,7 @@ public:
 	// ---------------------------------------------------------------------------
 	void ToggleSensorView(UTextureRenderTarget2D* InCameraRT); //차량 전방 카메라 화면을 켜거나 끕니다.
 	void ToggleLidarView(UTexture2D* InLidarRT); //라이다(LiDAR) 센서 화면을 켜거나 끕니다.
-	//bool IsLidarViewVisible() const;
+	bool IsLidarViewVisible() const;
 	//현재 라이다 위젯 화면이 켜져 있는지 확인합니다.
 	//라이다 화면 활성화 여부를 반환하여, 차량 센서가 불필요하게 작동(스캔)하지 않도록 상태를 확인하는 데 쓰입니다.
 
