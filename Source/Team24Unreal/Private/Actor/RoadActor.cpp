@@ -19,10 +19,6 @@ ARoadActor::ARoadActor()
 	// 스플라인을 루트로 두면 액터를 옮기면 도로 전체가 같이 움직임
 	RootComponent = SplineComponent;
 
-	// 에디터에서 다른 SplineActor와 시각적으로 구분되도록 색상 변경 (보라색)
-	SplineComponent->EditorUnselectedSplineSegmentColor = FLinearColor(0.5f, 0.2f, 0.8f);
-	SplineComponent->EditorSelectedSplineSegmentColor = FLinearColor(1.0f, 0.4f, 1.0f);
-
 	// 닫힌 루프 여부 기본값 (에디터에서 언제든 변경 가능)
 	// false = 시작-끝이 분리된 일반 도로
 	// true  = 순환 도로 (트랙처럼 무한 반복)

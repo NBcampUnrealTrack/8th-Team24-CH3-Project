@@ -204,6 +204,13 @@ protected:
 		meta=(AllowPrivateAccess="true"))
 	float MaxRoadDeviation = 1500.f;
 
+	/* 도로 끝에 이만큼 가까워지면 미리 감속 시작 (cm) */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Autopilot|Path",
+		meta=(AllowPrivateAccess="true"))
+	float EndApproachDistance = 2000.f;  // 20m 미리 감속
+
+	bool bPathCompleted = false;
+
 	/* 디버그용 - 매 프레임 명령을 로그로 출력할지 여부 */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Autopilot|Debug",
 		meta=(AllowPrivateAccess="true"))
