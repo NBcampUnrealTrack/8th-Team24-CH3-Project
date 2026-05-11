@@ -199,6 +199,11 @@ protected:
 		meta=(AllowPrivateAccess="true"))
 	float EndOfPathThreshold = 100.f;
 
+	/* 도로에서 이만큼 벗어나면 자율주행 일시 정지 (cm) */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Autopilot|Path",
+		meta=(AllowPrivateAccess="true"))
+	float MaxRoadDeviation = 1500.f;
+
 	/* 디버그용 - 매 프레임 명령을 로그로 출력할지 여부 */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Autopilot|Debug",
 		meta=(AllowPrivateAccess="true"))

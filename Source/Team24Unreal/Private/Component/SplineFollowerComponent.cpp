@@ -92,6 +92,15 @@ void USplineFollowerComponent::TickComponent(float DeltaTime, ELevelTick TickTyp
 		return;
 	}
 
+	// 1-1) 페일세이프: 도로에서 너무 멀어지면 자율주행 일시 정지
+	const FVector RoadHere = GetLocationAtDistance(CurrentDistance);
+	if (FVector::Dist(VehicleLoc, RoadHere) > MaxRoadDeviation)
+	{
+		ApplySpeedCommand(0.f, VehicleSpeed);
+		ApplySteeringCommand(0.f);
+		return;
+	}
+
 	// 2) 곡률 측정 (현재 + 전방)
 	float CurvHere, CurvAhead;
 	SampleCurvatures(CurvHere, CurvAhead);
