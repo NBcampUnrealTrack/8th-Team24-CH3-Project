@@ -46,7 +46,7 @@ void UCameraSensorComponent::EndPlay(const EEndPlayReason::Type EndPlayReason)
 }
 
 #if WITH_EDITOR // 에디터 안에서만 사용할 것이기 때문에 이렇게 주석처리함
-void UCameraSensorComponent::PostEditChangeProperty(FPropertyChangedEvent& PropertyChangedEvent) 
+void UCameraSensorComponent::PostEditChangeProperty(FPropertyChangedEvent& PropertyChangedEvent)
 // 위에서 속성을 변경했으면 즉시 ApplyPreset()을 호출하는 함수
 {
 	Super::PostEditChangeProperty(PropertyChangedEvent);
@@ -67,7 +67,7 @@ void UCameraSensorComponent::InitializeCapture() // 카메라 시스템을 전�
 		UE_LOG(LogCameraSensor, Error, TEXT("CameraSensorComponent has no owning actor."));
 		return;
 	}
-	
+
 	CreateRenderTarget(); // 텍스처 메모리 생성
 	ConfigureSceneCapture(); // SceneCapture에 RenderTarget 연결
 	ApplyPostProcessSettings(); // 후처리 효과 적용
@@ -84,7 +84,7 @@ void UCameraSensorComponent::InitializeCapture() // 카메라 시스템을 전�
 
 void UCameraSensorComponent::CreateRenderTarget()
 {
-	RenderTarget = NewObject<UTextureRenderTarget2D>(this, TEXT("SensorRenderTarget")); 
+	RenderTarget = NewObject<UTextureRenderTarget2D>(this, TEXT("SensorRenderTarget"));
 	RenderTarget->InitAutoFormat(Intrinsics.ImageWidth, Intrinsics.ImageHeight); // 카메라 해상도 설정
 	RenderTarget->RenderTargetFormat = ETextureRenderTargetFormat::RTF_RGBA8; // 32bit 일반 카메라 포맷으로 설정
 	RenderTarget->bAutoGenerateMips = false; // Mips 자동완성 꺼놓음
@@ -221,7 +221,7 @@ void UCameraSensorComponent::OnCaptureTimer() // 타이머마다 호출되어 �
 	if (bSensorEnabled && SceneCapture)
 	{
 		SceneCapture->CaptureScene();
-		FrameCount++; 
+		FrameCount++;
 
 		if (bIsDataSaving && RenderTarget)
 		{
@@ -407,4 +407,28 @@ void UCameraSensorComponent::SaveCameraImage() // RenderTarget의 픽셀을 읽�
 
 	UE_LOG(LogCameraSensor, Verbose, TEXT("Saved %dx%d image → %s (%lld bytes)"),
 		Width, Height, *FilePath, CompressedData.Num());
+}
+
+void UCameraSensorComponent::ApplyTunnelProfile(bool bInTunnel)
+{
+	if (bInTunnel)
+	{
+		CachedMinEV = Exposure.MinEV;
+		CachedMaxEV = Exposure.MaxEV;
+		CachedBloom = PostProcess.BloomIntensity;
+		CachedNoise = Noise.GaussianStdDev;
+
+		Exposure.MinEV -= 2.f;
+		Exposure.MaxEV -= 2.f;
+		PostProcess.BloomIntensity = 1.5f; // 헤드라이트 번짐
+		Noise.GaussianStdDev += 1.5f;
+		ApplyPostProcessSettings();
+	}
+	else
+	{
+		Exposure.MinEV = CachedMinEV;
+		Exposure.MaxEV = CachedMaxEV;
+		PostProcess.BloomIntensity = CachedBloom;
+		ApplyPostProcessSettings();
+	}
 }

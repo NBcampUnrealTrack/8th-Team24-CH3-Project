@@ -110,7 +110,7 @@ void ULidarSensorComponent::RebuildDirectionCache() // 라이다가 쏠 모든 �
 void ULidarSensorComponent::StartScanTimer() // 일정 주기마다 OnScanTimer()를 자동 호출하는 타이머를 등록하는 함수
 {
 	if (GetWorld() == nullptr) return;
-	
+
 	const float Interval = 1.0f / FMath::Max(Config.RotationRate, 1.0f);
 	GetWorld()->GetTimerManager().SetTimer(
 		ScanTimerHandle,
@@ -124,7 +124,7 @@ void ULidarSensorComponent::StopScanTimer()
 {
 	if (GetWorld())
 		GetWorld()->GetTimerManager().ClearTimer(ScanTimerHandle);
-	
+
 	bHasPendingTraces = false;
 	SetComponentTickEnabled(false);
 }
@@ -259,12 +259,12 @@ void ULidarSensorComponent::RefreshSettings() // 라이다 설정 전체를 런�
 {
 	bDirectionsDirty = true;
 	BevConfig.ViewRange = Config.MaxRange;
-	
+
 	if (BevRenderer)
 		BevRenderer->UpdateConfig(BevConfig);
-	
+
 	StopScanTimer();
-	
+
 	if (bSensorEnabled)
 		StartScanTimer();
 }
@@ -339,4 +339,24 @@ void ULidarSensorComponent::SavePointCloudData() // 포인트클라우드를 KIT
 	);
 
 	UE_LOG(LogLidarSensor, Verbose, TEXT("Saved %d points → %s"), NumPoints, *FilePath);
+}
+
+void ULidarSensorComponent::ApplyTunnelProfile(bool bInTunnel) // 터널에서
+{
+	if (bInTunnel)
+	{
+		CachedNoise = Config.NoiseStdDev;
+		CachedMaxRange = Config.MaxRange;
+		Config.NoiseStdDev += 1.5f;
+		Config.MaxRange += 0.7f;
+		RebuildDirectionCache();
+	}
+	else
+	{
+		{
+			Config.NoiseStdDev = CachedNoise;
+			Config.MaxRange = CachedMaxRange;
+			RebuildDirectionCache();
+		}
+	}
 }

@@ -1,4 +1,4 @@
-// Copyright NBC, Inc. All Rights Reserved.
+﻿// Copyright NBC, Inc. All Rights Reserved.
 
 #pragma once
 
@@ -25,7 +25,7 @@ public:
 	void StopScan();
 
 	UFUNCTION(BlueprintPure, Category = "LidarSensor")
-	UTexture2D* GetBevRenderTarget() const;
+	UTexture2D* GetBevRenderTarget() const; // BEV 텍스처 반환, 블루프린트 퓨어 =  노드에 실행 핀 없음??
 
 protected:
 	virtual void BeginPlay() override;
@@ -46,18 +46,18 @@ private:
 
 	UFUNCTION(BlueprintCallable, Category = "LidarSensor")
 	void RefreshSettings();
-	
+
 	void InitializeSensor();
 	void StartScanTimer();
 	void StopScanTimer();
 
 	void OnScanTimer();
-	void FireAsyncTraces();
+	void FireAsyncTraces(); // 레이 일괄 발사
 	void CollectAsyncResults();
 	void SavePointCloudData();
 
-	void RebuildDirectionCache();
-	
+	void RebuildDirectionCache();// 방향 벡터 캐시 재계산
+
 private:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "LidarSensor|Config",
 		meta=(AllowPrivateAccess="true"))
@@ -73,7 +73,7 @@ private:
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "LidarSensor|BEV",
 		meta=(AllowPrivateAccess="true"))
-	FBevRenderConfig BevConfig;
+	FBevRenderConfig BevConfig; // 이건 Bev
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "LidarSensor|DataSave",
 		meta=(AllowPrivateAccess="true"))
@@ -90,27 +90,33 @@ private:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "LidarSensor|Output",
 		meta=(AllowPrivateAccess="true"))
 	int64 FrameCount = 0;
-	
+
 	UFUNCTION(BlueprintPure, Category = "LidarSensor")
 	const FLidarPointCloudData& GetPointCloud() const { return LastPointCloud; }
 
+	UFUNCTION(BlueprintCallable, Category = "LidarSensor")
+	void ApplyTunnelProfile(bool bInTunnel); // 터널에서 쓸 함수
+
 	UPROPERTY()
 	TObjectPtr<ULidarBevRenderer> BevRenderer;
-	
+
 private:
 
 	FTimerHandle ScanTimerHandle;
-	TArray<FTraceHandle> PendingHandles;
-	TArray<FVector> PendingWorldDirs;
-	FTransform PendingTransform;
+	TArray<FTraceHandle> PendingHandles; // 발사된 비동기 레이 핸들 목록
+	TArray<FVector> PendingWorldDirs; // 발사된 레이 방향 벡터 목록ㄹ
+	FTransform PendingTransform; // 레이 발사 시점의 센서 트랜스폼??
 
-	bool bHasPendingTraces = false;
-	uint64 FireFrameNumber = 0;
+	bool bHasPendingTraces = false; // 비동기 결과 대기 중 여부
+	uint64 FireFrameNumber = 0; // 레이 발사한 프레임 번호
 
-	TArray<FVector> CachedLocalDirections;
+	TArray<FVector> CachedLocalDirections; // 미리 계산된 로컬 방향 벡터 캐시
 
-	bool bDirectionsDirty = true;
+	bool bDirectionsDirty = true; // 캐시 무효화 플래그??
 
-	TArray<FVector> ScanPoints;
-	TArray<float>   ScanIntensities;
+	TArray<FVector> ScanPoints; // 임시 충돌 위치 버퍼?
+	TArray<float>   ScanIntensities; // 임시 강도값 버퍼?
+
+	float CachedNoise = 0.f;
+	float CachedMaxRange = 0.f;
 };
