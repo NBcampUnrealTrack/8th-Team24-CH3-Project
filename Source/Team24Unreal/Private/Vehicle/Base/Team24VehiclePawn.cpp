@@ -295,4 +295,6 @@ void ATeam24VehiclePawn::SetInTunnel(bool bNewInTunnel)
 {
 	UE_LOG(LogTemp, Log, TEXT("SetInTunnel: %s"),
 		bNewInTunnel ? TEXT("true") : TEXT("false"));
+
+	OnTunnelToggleDelegate.Broadcast(bNewInTunnel);
 }
