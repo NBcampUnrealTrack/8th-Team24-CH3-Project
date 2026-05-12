@@ -106,6 +106,9 @@ private:
 public:
 	ATeam24VehiclePawn(); //생성자
 
+	UFUNCTION(BlueprintCallable, Category="Tunnel")
+	void SetInTunnel(bool bNewInTunnel);
+
 	// ---------------------------------------------------------------------------
 	// [Vehicle Control] - 차량 제어 인터페이스 (블루프린트 및 AI/외부 호출용)
 	// ---------------------------------------------------------------------------
