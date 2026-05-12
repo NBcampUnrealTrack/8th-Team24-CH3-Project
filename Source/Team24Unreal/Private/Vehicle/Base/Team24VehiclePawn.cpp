@@ -297,4 +297,14 @@ void ATeam24VehiclePawn::SetInTunnel(bool bNewInTunnel)
 		bNewInTunnel ? TEXT("true") : TEXT("false"));
 
 	OnTunnelToggleDelegate.Broadcast(bNewInTunnel);
+
+	//터널 헤드라이트 키는 부분(너무 약함 수정예정)
+	if (bNewInTunnel)
+	{
+		HeadLights(bNewInTunnel);
+	}
+	else
+	{
+		HeadLights(bNewInTunnel);
+	}
 }
