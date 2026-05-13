@@ -178,9 +178,18 @@ void ULidarBevRenderer::RenderPointCloud(const FLidarPointCloudData& PointCloud,
 		}
 
 		// 수평 거리(XY 평면)를 [0, ViewRange] 범위로 정규화 후 반전 → 가까울수록 밝은 색
-		const float HorizDist = FMath::Sqrt(LocalPt.X * LocalPt.X + LocalPt.Y * LocalPt.Y);
-		const float NormDist = FMath::Clamp(HorizDist / Config.ViewRange, 0.f, 1.f);
-		const FColor Color = ColorLUT[static_cast<uint8>((1.0f - NormDist) * 255.f)];
+		const bool bBuilding = PointCloud.bIsBuilding.IsValidIndex(i) && PointCloud.bIsBuilding[i];
+		FColor Color;
+		if (bBuilding)
+		{
+			Color = FColor(255, 0, 0, 255);
+		}
+		else
+		{
+			const float HorizDist = FMath::Sqrt(LocalPt.X * LocalPt.X + LocalPt.Y * LocalPt.Y);
+			const float NormDist = FMath::Clamp(HorizDist / Config.ViewRange, 0.f, 1.f);
+			Color = ColorLUT[static_cast<uint8>((1.0f - NormDist) * 255.f)];
+		}
 
 		if (PtSize == 1)
 		{

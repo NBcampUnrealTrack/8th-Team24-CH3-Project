@@ -64,6 +64,8 @@ void ULidarSensorComponent::InitializeSensor()
 	PendingWorldDirs.Reserve(TotalPts); // 레이 방향 벡터
 	ScanPoints.Reserve(TotalPts); // 충돌 위치
 	ScanIntensities.Reserve(TotalPts); // 강도값
+	ScanIsBuilding.Reserve(TotalPts); // 메모리 할당 용
+	LastPointCloud.bIsBuilding.Reserve(TotalPts);
 	LastPointCloud.Points.Reserve(TotalPts); // 최종 포인트클라우드
 	LastPointCloud.Intensities.Reserve(TotalPts); // 최종 강도
 
@@ -191,6 +193,7 @@ void ULidarSensorComponent::CollectAsyncResults() // 비동기로 발사했던 �
 
 	ScanPoints.Reset();
 	ScanIntensities.Reset();
+	ScanIsBuilding.Reset(); //프레임 수집전 프레임 데이터 비우기
 
 	const float MaxRange = Config.MaxRange;
 	const float MinRange = Config.MinRange;
@@ -213,15 +216,19 @@ void ULidarSensorComponent::CollectAsyncResults() // 비동기로 발사했던 �
 
 		ScanPoints.Add(HitPoint);
 		ScanIntensities.Add(FMath::Clamp(1.f - (Hit.Distance / MaxRange), 0.f, 1.f));
+		AActor* HitActor = Hit.GetActor();
+		ScanIsBuilding.Add(HitActor && HitActor->ActorHasTag(TEXT("Building"))); // 빌딩 태그 체크
 	}
 
 	LastPointCloud.Points      = MoveTemp(ScanPoints); // 포인트 위치 배열 이동
 	LastPointCloud.Intensities = MoveTemp(ScanIntensities); // 강도값 배열 이동
+	LastPointCloud.bIsBuilding = MoveTemp(ScanIsBuilding); // LastPointCloud로 데이터 이동
 	LastPointCloud.PointCount  = LastPointCloud.Points.Num(); // 포인트 개수 기록
 	LastPointCloud.FrameNumber = FrameCount; // 프레임 번호 기록
 
 	ScanPoints.Reserve(Config.GetTotalPoints());
 	ScanIntensities.Reserve(Config.GetTotalPoints());
+	ScanIsBuilding.Reserve(Config.GetTotalPoints()); // 메모리 확보
 
 	if (BevRenderer)
 		BevRenderer->RenderPointCloud(LastPointCloud, PendingTransform);

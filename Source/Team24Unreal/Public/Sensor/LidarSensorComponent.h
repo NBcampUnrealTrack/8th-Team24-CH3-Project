@@ -103,8 +103,9 @@ private:
 private:
 
 	FTimerHandle ScanTimerHandle;
+	TArray<bool> ScanIsBuilding; // 빌딩 스캔
 	TArray<FTraceHandle> PendingHandles; // 발사된 비동기 레이 핸들 목록
-	TArray<FVector> PendingWorldDirs; // 발사된 레이 방향 벡터 목록ㄹ
+	TArray<FVector> PendingWorldDirs; // 발사된 레이 방향 벡터 목록
 	FTransform PendingTransform; // 레이 발사 시점의 센서 트랜스폼??
 
 	bool bHasPendingTraces = false; // 비동기 결과 대기 중 여부
