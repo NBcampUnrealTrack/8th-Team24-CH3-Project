@@ -31,6 +31,10 @@ void USplineFollowerComponent::BeginPlay()
 		return;
 	}
 
+	// 추가: 터널 델리게이트 구독
+	OwnerPawn->OnTunnelToggleDelegate.AddUObject(
+		this, &USplineFollowerComponent::OnTunnelToggled);
+
 	// 1. 월드에서 따라갈 RoadActor 찾기
 	TargetRoad = FindBestRoadActor();
 	if (!TargetRoad.IsValid())
@@ -415,4 +419,34 @@ USplineComponent* USplineFollowerComponent::GetSpline() const
 {
 	if (!TargetRoad.IsValid()) return nullptr;
 	return TargetRoad->GetSplineComponent();
+}
+
+void USplineFollowerComponent::OnTunnelToggled(bool bInTunnel)
+{
+	// 처음 호출 시 베이스라인 저장
+	if (!bBaselineCached)
+	{
+		BaselineMaxSpeed = MaxSpeed;
+		BaselineLookAheadBase = LookAheadBase;
+		bBaselineCached = true;
+	}
+
+	if (bInTunnel)
+	{
+		// 터널 진입: 속도/전방주시 감소
+		MaxSpeed = BaselineMaxSpeed * TunnelSpeedScale;
+		LookAheadBase = BaselineLookAheadBase * TunnelLookAheadScale;
+
+		// 즉시 감속 효과 (현재 속도가 새 MaxSpeed보다 빠르면 클램프)
+		SmoothedTargetSpeed = FMath::Min(SmoothedTargetSpeed, MaxSpeed);
+	}
+	else
+	{
+		// 터널 이탈: 원래 값 복원
+		MaxSpeed = BaselineMaxSpeed;
+		LookAheadBase = BaselineLookAheadBase;
+	}
+
+	UE_LOG(LogTeam24, Log, TEXT("Autopilot tunnel mode: %s, MaxSpeed=%.0f, LookAhead=%.0f"),
+		bInTunnel ? TEXT("ON") : TEXT("OFF"), MaxSpeed, LookAheadBase);
 }
