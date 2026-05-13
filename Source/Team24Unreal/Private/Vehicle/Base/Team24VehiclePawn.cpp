@@ -298,7 +298,8 @@ void ATeam24VehiclePawn::SetInTunnel(bool bNewInTunnel)
 
 	OnTunnelToggleDelegate.Broadcast(bNewInTunnel);
 
-	//터널 헤드라이트 키는 부분(너무 약함 수정예정)
+	//터널 헤드라이트 키는 부분(빛이 너무 약함 수정예정)
+	//Pawn에 SpotLight 장착예정
 	if (bNewInTunnel)
 	{
 		HeadLights(bNewInTunnel);
