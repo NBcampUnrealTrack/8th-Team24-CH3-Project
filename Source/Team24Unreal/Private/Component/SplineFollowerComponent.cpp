@@ -1,16 +1,13 @@
 // Copyright Team24. All Rights Reserved.
 
 #include "Component/SplineFollowerComponent.h"
-#include "Team24Unreal/Team24Unreal.h" //전역 카테고리를 사용하기 위한 헤더파일
+#include "Team24Unreal/Team24Unreal.h"
 #include "Actor/RoadActor.h"
 #include "Components/SplineComponent.h"
 #include "Vehicle/Base/Team24VehiclePawn.h"
 
 // EngineUtils.h: TActorIterator (월드의 모든 액터 순회)
 #include "EngineUtils.h"
-
-// (Team24Unreal.h에 LogTeam24로 사용 가능한 로그 카테고리를 구현)
-// DEFINE_LOG_CATEGORY_STATIC(LogTeam24, Log, All);
 
 // 생성자
 USplineFollowerComponent::USplineFollowerComponent()
@@ -22,19 +19,21 @@ USplineFollowerComponent::USplineFollowerComponent()
 }
 
 //  BeginPlay
-
 void USplineFollowerComponent::BeginPlay()
 {
 	Super::BeginPlay();
 
 	// 이 컴포넌트의 주인을 Pawn으로 캐스팅
-	// 주석해제
 	OwnerPawn = Cast<ATeam24VehiclePawn>(GetOwner());
 	if (!OwnerPawn.IsValid())
 	{
 		UE_LOG(LogTeam24, Error, TEXT("Owner is not a Pawn."));
 		return;
 	}
+
+	// 추가: 터널 델리게이트 구독
+	OwnerPawn->OnTunnelToggleDelegate.AddUObject(
+		this, &USplineFollowerComponent::OnTunnelToggled);
 
 	// 1. 월드에서 따라갈 RoadActor 찾기
 	TargetRoad = FindBestRoadActor();
@@ -60,12 +59,6 @@ void USplineFollowerComponent::BeginPlay()
 
 	// 5. 모든 준비 완료 → Tick 활성화
 	SetComponentTickEnabled(true);
-
-	UE_LOG(LogTeam24, Log, TEXT("Following road '%s', length=%.1f, loop=%s, start=%.1f"),
-		*TargetRoad->RoadName,
-		Spline->GetSplineLength(),
-		Spline->IsClosedLoop() ? TEXT("Y") : TEXT("N"),
-		CurrentDistance);
 }
 
 //  TickComponent
@@ -77,6 +70,12 @@ void USplineFollowerComponent::TickComponent(float DeltaTime, ELevelTick TickTyp
 	// 안전 검사
 	if (!OwnerPawn.IsValid() || !TargetRoad.IsValid()) return;
 	if (!GetSpline()) return;
+
+	// 이미 끝 도달했으면 브레이크만 유지
+	if (bPathCompleted)
+	{
+		return;
+	}
 
 	// 매 프레임 자주 쓸 값들 캐싱
 	const FVector VehicleLoc = OwnerPawn->GetActorLocation();
@@ -92,7 +91,8 @@ void USplineFollowerComponent::TickComponent(float DeltaTime, ELevelTick TickTyp
 		return;
 	}
 
-	// 1-1) 페일세이프: 도로에서 너무 멀어지면 자율주행 일시 정지
+	// 페일세이프: 도로에서 너무 멀어지면 자율주행 일시 정지
+	// 값들은 최종적으로 정리되면 그거에 맞춰서 재수정해야함
 	const FVector RoadHere = GetLocationAtDistance(CurrentDistance);
 	if (FVector::Dist(VehicleLoc, RoadHere) > MaxRoadDeviation)
 	{
@@ -200,7 +200,7 @@ FSteeringErrors USplineFollowerComponent::ComputeSteeringErrors(
 {
 	FSteeringErrors Errors;
 
-	// ---- 전방 주시 거리 결정 ----
+	// 전방 주시 거리 결정
 	const float CurvNorm = FMath::Clamp(CurvHere * SharpCurveSensitivity, 0.f, 1.f);
 	const float CurvScale = FMath::Lerp(1.f, SharpCurveLookAheadScale, CurvNorm);
 	const float LADist = (LookAheadBase + VehicleSpeed * LookAheadSpeedFactor) * CurvScale;
@@ -209,23 +209,23 @@ FSteeringErrors USplineFollowerComponent::ComputeSteeringErrors(
 	const FVector LAPos = GetLocationAtDistance(CurrentDistance + LADist);
 	const FVector LADir = GetDirectionAtDistance(CurrentDistance + LADist);
 
-	// ---- 1. 위치 오차 ----
+	// 1. 위치 오차
 	const FVector ToLA = (LAPos - VehicleLocation).GetSafeNormal();
 	Errors.PositionError = FMath::FindDeltaAngleDegrees(
 		VehicleYaw,
 		FMath::Atan2(ToLA.Y, ToLA.X) * (180.f / PI));
 
-	// ---- 2. 헤딩 오차 ----
+	// 2. 헤딩 오차
 	Errors.HeadingError = FMath::FindDeltaAngleDegrees(
 		VehicleYaw,
 		FMath::Atan2(LADir.Y, LADir.X) * (180.f / PI));
 
-	// ---- 3. 횡방향 오차 ----
+	// 3. 횡방향 오차
 	const FVector RoadPosHere = GetLocationAtDistance(CurrentDistance);
 	const FVector RoadDirHere = GetDirectionAtDistance(CurrentDistance);
 	const FVector Offset = VehicleLocation - RoadPosHere;
 
-	// 오프셋에서 도로 방향 성분을 뺀 수직 성분을, 도로의 "오른쪽" 방향에 투영
+	// 오프셋에서 도로 방향 성분을 뺀 수직 성분을, 도로의 오른쪽 방향에 투영
 	// → 부호 있는 횡방향 거리 (양수=오른쪽 이탈, 음수=왼쪽 이탈)
 	Errors.CrossTrackError = FVector::DotProduct(
 		Offset - RoadDirHere * FVector::DotProduct(Offset, RoadDirHere),
@@ -265,6 +265,24 @@ float USplineFollowerComponent::UpdateTargetSpeed(
 		SpeedLimit = FMath::Min(SpeedLimit, TargetRoad->SpeedLimit);
 	}
 
+	// 도로 끝 미리 감속 (순환 도로 아닐 때만)
+	USplineComponent* Spline = GetSpline();
+	if (Spline && !Spline->IsClosedLoop())
+	{
+		const float Remaining = Spline->GetSplineLength() - CurrentDistance;
+
+		if (Remaining < EndApproachDistance)
+		{
+			// 0 ~ 1 비율 (1: 멀음, 0: 도로 끝)
+			const float Ratio = FMath::Clamp(Remaining / EndApproachDistance, 0.f, 1.f);
+
+			// 끝에 가까울수록 0에 수렴 (MinSpeed 무시)
+			const float EndSpeedLimit = MaxSpeed * Ratio;
+
+			SpeedLimit = FMath::Min(SpeedLimit, EndSpeedLimit);
+		}
+	}
+
 	// 감속 vs 가속 시 다른 보간 속도
 	const float Rate = (SpeedLimit < SmoothedTargetSpeed) ? DecelRate : AccelRate;
 	SmoothedTargetSpeed = FMath::FInterpTo(SmoothedTargetSpeed, SpeedLimit, DeltaTime, Rate);
@@ -274,93 +292,61 @@ float USplineFollowerComponent::UpdateTargetSpeed(
 
 void USplineFollowerComponent::ApplySpeedCommand(float TargetSpeed, float CurrentSpeed)
 {
+	ATeam24VehiclePawn* Pawn = OwnerPawn.Get();
+	if (!Pawn) return;
+
 	// 속도 차이를 [-1, +1] 명령으로 변환
 	const float Cmd = FMath::Clamp(
 		(TargetSpeed - CurrentSpeed) * ThrottleGain, -1.f, 1.f);
 
-	// =====================================================
-	//  TODO: Team24Pawn이 만들어지면 여기를 실제 입력 호출로 교체
-	//        예시:
-	//          ATeam24Pawn* Pawn = Cast<ATeam24Pawn>(OwnerPawn.Get());
-	//          if (Cmd > CoastDeadzone)       Pawn->DoThrottle(Cmd);
-	//          else if (Cmd < -CoastDeadzone) Pawn->DoBrake(-Cmd);
-	//          else { Pawn->DoThrottle(0); Pawn->DoBrake(0); }
-	// =====================================================
-
-	//TODO 예시로 구현
-	ATeam24VehiclePawn*Pawn = Cast<ATeam24VehiclePawn>(OwnerPawn);
 	if (Cmd > CoastDeadzone)
 	{
+		// 가속 (DoThrottle 내부에서 브레이크 0으로 설정함)
 		Pawn->DoThrottle(Cmd);
 	}
 	else if (Cmd < -CoastDeadzone)
 	{
+		// 감속 (DoBrake 내부에서 가속 0으로 설정함)
 		Pawn->DoBrake(-Cmd);
 	}
 	else
 	{
-		Pawn->DoThrottle(0); Pawn->DoBrake(0);
-	}
-	//
-
-	if (bDebugLogCommands)
-	{
-		if (Cmd > CoastDeadzone)
-		{
-			UE_LOG(LogTeam24, VeryVerbose, TEXT("[SPEED] Throttle %.2f (target=%.0f, current=%.0f)"),
-			   Cmd, TargetSpeed, CurrentSpeed);
-		}
-		else if (Cmd < -CoastDeadzone)
-		{
-			UE_LOG(LogTeam24, VeryVerbose, TEXT("[SPEED] Brake %.2f (target=%.0f, current=%.0f)"),
-			   -Cmd, TargetSpeed, CurrentSpeed);
-		}
-		else
-		{
-			UE_LOG(LogTeam24, VeryVerbose, TEXT("[SPEED] Coast (target=%.0f, current=%.0f)"),
-			   TargetSpeed, CurrentSpeed);
-		}
+		// 데드존: 가속/브레이크 모두 떼기 (관성 주행)
+		Pawn->DoThrottle(0.f);
 	}
 }
 
 void USplineFollowerComponent::ApplySteeringCommand(float Steering)
 {
-	// =====================================================
-	//  TODO: Team24Pawn이 만들어지면 여기를 실제 입력 호출로 교체
-	//        예시:
-	//          ATeam24Pawn* Pawn = Cast<ATeam24Pawn>(OwnerPawn.Get());
-	//          Pawn->DoSteering(Steering);
-	// =====================================================
+	// 차량 핸들 입력 적용
+	ATeam24VehiclePawn* Pawn = OwnerPawn.Get();
+	if (!Pawn) return;
 
-	//ToDO 구현
-	ATeam24VehiclePawn*Pawn = Cast<ATeam24VehiclePawn>(OwnerPawn);
 	Pawn->DoSteering(Steering);
-	//
-
-	if (bDebugLogCommands)
-	{
-		UE_LOG(LogTeam24, VeryVerbose, TEXT("[STEER] %.3f"), Steering);
-	}
 }
 
 void USplineFollowerComponent::HandlePathCompleted()
 {
-	// =====================================================
-	//  TODO: Team24Pawn이 만들어지면 여기서 실제 정지 처리
-	//        예시:
-	//          ATeam24Pawn* Pawn = Cast<ATeam24Pawn>(OwnerPawn.Get());
-	//          Pawn->DoThrottle(0.f);
-	//          Pawn->DoBrakeStart();
-	// =====================================================
+	// 도로 끝 도달 - 차량 완전 정지
+	ATeam24VehiclePawn* Pawn = OwnerPawn.Get();
+	if (!Pawn) return;
 
-	//ToDO 구현
-	ATeam24VehiclePawn*Pawn = Cast<ATeam24VehiclePawn>(OwnerPawn);
-	Pawn->DoThrottle(0.f);
-	Pawn->DoBrakeStart();
-	//
-	
-	UE_LOG(LogTeam24, Log, TEXT("Path completed - vehicle should stop."));
-	SetComponentTickEnabled(false); // Tick 끔
+	Pawn->DoThrottle(0.f);    // 가속 페달 떼기
+	Pawn->DoSteering(0.f);    // 핸들 중앙으로
+	Pawn->DoHandbrakeStart();
+	Pawn->DoBrakeStart();     // 후미등 켜기 (시각 효과)
+
+	// 물리 시뮬레이션 완전 중지
+	if (USkeletalMeshComponent* Mesh = Pawn->GetMesh())
+	{
+		Mesh->SetPhysicsLinearVelocity(FVector::ZeroVector);
+		Mesh->SetPhysicsAngularVelocityInDegrees(FVector::ZeroVector);
+		Mesh->SetSimulatePhysics(false);  // ⭐ 핵심: 물리 자체 OFF
+	}
+
+	UE_LOG(LogTemp, Log, TEXT("Path completed - vehicle stopping."));
+	bPathCompleted = true;
+	SetComponentTickEnabled(false);
 }
 
 //  도로 위 위치/방향/곡률 조회
@@ -433,4 +419,34 @@ USplineComponent* USplineFollowerComponent::GetSpline() const
 {
 	if (!TargetRoad.IsValid()) return nullptr;
 	return TargetRoad->GetSplineComponent();
+}
+
+void USplineFollowerComponent::OnTunnelToggled(bool bInTunnel)
+{
+	// 처음 호출 시 베이스라인 저장
+	if (!bBaselineCached)
+	{
+		BaselineMaxSpeed = MaxSpeed;
+		BaselineLookAheadBase = LookAheadBase;
+		bBaselineCached = true;
+	}
+
+	if (bInTunnel)
+	{
+		// 터널 진입: 속도/전방주시 감소
+		MaxSpeed = BaselineMaxSpeed * TunnelSpeedScale;
+		LookAheadBase = BaselineLookAheadBase * TunnelLookAheadScale;
+
+		// 즉시 감속 효과 (현재 속도가 새 MaxSpeed보다 빠르면 클램프)
+		SmoothedTargetSpeed = FMath::Min(SmoothedTargetSpeed, MaxSpeed);
+	}
+	else
+	{
+		// 터널 이탈: 원래 값 복원
+		MaxSpeed = BaselineMaxSpeed;
+		LookAheadBase = BaselineLookAheadBase;
+	}
+
+	UE_LOG(LogTeam24, Log, TEXT("Autopilot tunnel mode: %s, MaxSpeed=%.0f, LookAhead=%.0f"),
+		bInTunnel ? TEXT("ON") : TEXT("OFF"), MaxSpeed, LookAheadBase);
 }

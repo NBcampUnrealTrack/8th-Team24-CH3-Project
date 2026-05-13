@@ -290,3 +290,11 @@ void ATeam24VehiclePawn::DoHandbrakeStop()
 	ChaosVehicleMovement->SetHandbrakeInput(false);
 	BrakeLights(false);
 }
+
+void ATeam24VehiclePawn::SetInTunnel(bool bNewInTunnel)
+{
+	UE_LOG(LogTeam24, Log, TEXT("SetInTunnel: %s"),
+		bNewInTunnel ? TEXT("true") : TEXT("false"));
+
+	OnTunnelToggleDelegate.Broadcast(bNewInTunnel);
+}

@@ -17,6 +17,8 @@ class UAgentDataLogger;
 class UInputComponent;
 struct FInputActionValue;
 
+DECLARE_MULTICAST_DELEGATE_OneParam(FOnTunnelStateChanged, bool);//델리게이트 채널 선언
+
 /*
  * 헤더에서 USphereComponent* 선언안하는 이유 : UE4 방식 -> TObjectPtr< >: UE5 방식 하지만 cpp에서는 가벼운 *를 사용
  */
@@ -134,6 +136,14 @@ public:
 	//UFUNCTION(BlueprintCallable, Category="Input")
 	//void DoLookAround(float YawDelta); // 주행 중 주변을 둘러보는 카메라 시점(좌우 회전) 변경을 처리합니다.
 
+	// ---------------------------------------------------------------------------
+	// [Tunnel] - 터널 체크용 델리게이트 파트
+	// ---------------------------------------------------------------------------
+
+	FOnTunnelStateChanged OnTunnelToggleDelegate;
+
+	UFUNCTION(BlueprintCallable, Category="Tunnel")
+	void SetInTunnel(bool bNewInTunnel);
 
 	// ---------------------------------------------------------------------------
 	// [Component Getters] - 내부 부품 접근자

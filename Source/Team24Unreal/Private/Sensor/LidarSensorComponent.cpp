@@ -1,4 +1,4 @@
-// Copyright NBC, Inc. All Rights Reserved.
+﻿// Copyright NBC, Inc. All Rights Reserved.
 
 #include "Sensor/LidarSensorComponent.h"
 #include "Sensor/LidarBevRenderer.h"
@@ -64,6 +64,8 @@ void ULidarSensorComponent::InitializeSensor()
 	PendingWorldDirs.Reserve(TotalPts); // 레이 방향 벡터
 	ScanPoints.Reserve(TotalPts); // 충돌 위치
 	ScanIntensities.Reserve(TotalPts); // 강도값
+	ScanIsBuilding.Reserve(TotalPts); // 메모리 할당 용
+	LastPointCloud.bIsBuilding.Reserve(TotalPts);
 	LastPointCloud.Points.Reserve(TotalPts); // 최종 포인트클라우드
 	LastPointCloud.Intensities.Reserve(TotalPts); // 최종 강도
 
@@ -110,7 +112,7 @@ void ULidarSensorComponent::RebuildDirectionCache() // 라이다가 쏠 모든 �
 void ULidarSensorComponent::StartScanTimer() // 일정 주기마다 OnScanTimer()를 자동 호출하는 타이머를 등록하는 함수
 {
 	if (GetWorld() == nullptr) return;
-	
+
 	const float Interval = 1.0f / FMath::Max(Config.RotationRate, 1.0f);
 	GetWorld()->GetTimerManager().SetTimer(
 		ScanTimerHandle,
@@ -124,7 +126,7 @@ void ULidarSensorComponent::StopScanTimer()
 {
 	if (GetWorld())
 		GetWorld()->GetTimerManager().ClearTimer(ScanTimerHandle);
-	
+
 	bHasPendingTraces = false;
 	SetComponentTickEnabled(false);
 }
@@ -191,6 +193,7 @@ void ULidarSensorComponent::CollectAsyncResults() // 비동기로 발사했던 �
 
 	ScanPoints.Reset();
 	ScanIntensities.Reset();
+	ScanIsBuilding.Reset(); //프레임 수집전 프레임 데이터 비우기
 
 	const float MaxRange = Config.MaxRange;
 	const float MinRange = Config.MinRange;
@@ -213,15 +216,19 @@ void ULidarSensorComponent::CollectAsyncResults() // 비동기로 발사했던 �
 
 		ScanPoints.Add(HitPoint);
 		ScanIntensities.Add(FMath::Clamp(1.f - (Hit.Distance / MaxRange), 0.f, 1.f));
+		AActor* HitActor = Hit.GetActor();
+		ScanIsBuilding.Add(HitActor && HitActor->ActorHasTag(TEXT("Building"))); // 빌딩 태그 체크
 	}
 
 	LastPointCloud.Points      = MoveTemp(ScanPoints); // 포인트 위치 배열 이동
 	LastPointCloud.Intensities = MoveTemp(ScanIntensities); // 강도값 배열 이동
+	LastPointCloud.bIsBuilding = MoveTemp(ScanIsBuilding); // LastPointCloud로 데이터 이동
 	LastPointCloud.PointCount  = LastPointCloud.Points.Num(); // 포인트 개수 기록
 	LastPointCloud.FrameNumber = FrameCount; // 프레임 번호 기록
 
 	ScanPoints.Reserve(Config.GetTotalPoints());
 	ScanIntensities.Reserve(Config.GetTotalPoints());
+	ScanIsBuilding.Reserve(Config.GetTotalPoints()); // 메모리 확보
 
 	if (BevRenderer)
 		BevRenderer->RenderPointCloud(LastPointCloud, PendingTransform);
@@ -259,12 +266,12 @@ void ULidarSensorComponent::RefreshSettings() // 라이다 설정 전체를 런�
 {
 	bDirectionsDirty = true;
 	BevConfig.ViewRange = Config.MaxRange;
-	
+
 	if (BevRenderer)
 		BevRenderer->UpdateConfig(BevConfig);
-	
+
 	StopScanTimer();
-	
+
 	if (bSensorEnabled)
 		StartScanTimer();
 }
@@ -339,4 +346,22 @@ void ULidarSensorComponent::SavePointCloudData() // 포인트클라우드를 KIT
 	);
 
 	UE_LOG(LogLidarSensor, Verbose, TEXT("Saved %d points → %s"), NumPoints, *FilePath);
+}
+
+void ULidarSensorComponent::ApplyTunnelProfile(bool bInTunnel) // 터널에서
+{
+	if (bInTunnel)
+	{
+		CachedNoise = Config.NoiseStdDev;
+		CachedMaxRange = Config.MaxRange;
+		Config.NoiseStdDev *= 1.5f;
+		Config.MaxRange *= 0.7f;
+		RebuildDirectionCache();
+	}
+	else
+	{
+		Config.NoiseStdDev = CachedNoise;
+		Config.MaxRange = CachedMaxRange;
+		RebuildDirectionCache();
+	}
 }

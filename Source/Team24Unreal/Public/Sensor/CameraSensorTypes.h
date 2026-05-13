@@ -67,10 +67,14 @@ struct FLidarPointCloudData
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "PointCloud")
 	int64 FrameNumber = 0;
 
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "PointCloud") //빌딩 감지 배열 추가
+	TArray<bool> bIsBuilding;
+
 	void Reset()
 	{
 		Points.Reset();
 		Intensities.Reset();
+		bIsBuilding.Reset(); //빌딩 배열 초기화
 		PointCount = 0;
 	}
 };

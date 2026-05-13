@@ -95,6 +95,10 @@ protected:
 	/* 경로 끝 도달 시 차량 정지 처리 */
 	void HandlePathCompleted();
 
+	/* 터널 진입/이탈 시 호출 (델리게이트 콜백) */
+	UFUNCTION()
+	void OnTunnelToggled(bool bInTunnel);
+
 	//  도로 위 위치/곡률 조회 (USplineComponent 내장 함수 활용)
 
 	/* 도로 위 특정 거리 지점의 위치 (월드 좌표) */
@@ -203,6 +207,27 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Autopilot|Path",
 		meta=(AllowPrivateAccess="true"))
 	float MaxRoadDeviation = 1500.f;
+
+	/* 도로 끝에 이만큼 가까워지면 미리 감속 시작 (cm) */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Autopilot|Path",
+		meta=(AllowPrivateAccess="true"))
+	float EndApproachDistance = 2000.f;  // 20m 미리 감속
+
+	//  파라미터 (터널)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Autopilot|Tunnel",
+		meta=(AllowPrivateAccess="true"))
+	float TunnelSpeedScale = 0.7f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Autopilot|Tunnel",
+		meta=(AllowPrivateAccess="true"))
+	float TunnelLookAheadScale = 0.6f;
+
+	bool bPathCompleted = false;
+
+	// 터널 진입 전 원래 값 저장 (베이스라인)
+	float BaselineMaxSpeed = 0.f;
+	float BaselineLookAheadBase = 0.f;
+	bool  bBaselineCached = false;
 
 	/* 디버그용 - 매 프레임 명령을 로그로 출력할지 여부 */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Autopilot|Debug",
