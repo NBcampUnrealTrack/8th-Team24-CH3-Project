@@ -1,4 +1,4 @@
-// Copyright NBC, Inc. All Rights Reserved.
+﻿// Copyright NBC, Inc. All Rights Reserved.
 
 #include "Sensor/LidarSensorComponent.h"
 #include "Sensor/LidarBevRenderer.h"
@@ -347,16 +347,14 @@ void ULidarSensorComponent::ApplyTunnelProfile(bool bInTunnel) // 터널에서
 	{
 		CachedNoise = Config.NoiseStdDev;
 		CachedMaxRange = Config.MaxRange;
-		Config.NoiseStdDev += 1.5f;
-		Config.MaxRange += 0.7f;
+		Config.NoiseStdDev *= 1.5f;
+		Config.MaxRange *= 0.7f;
 		RebuildDirectionCache();
 	}
 	else
 	{
-		{
-			Config.NoiseStdDev = CachedNoise;
-			Config.MaxRange = CachedMaxRange;
-			RebuildDirectionCache();
-		}
+		Config.NoiseStdDev = CachedNoise;
+		Config.MaxRange = CachedMaxRange;
+		RebuildDirectionCache();
 	}
 }
