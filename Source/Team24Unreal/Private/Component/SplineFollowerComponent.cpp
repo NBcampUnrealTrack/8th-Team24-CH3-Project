@@ -331,22 +331,35 @@ void USplineFollowerComponent::HandlePathCompleted()
 	ATeam24VehiclePawn* Pawn = OwnerPawn.Get();
 	if (!Pawn) return;
 
-	Pawn->DoThrottle(0.f);    // 가속 페달 떼기
-	Pawn->DoSteering(0.f);    // 핸들 중앙으로
-	Pawn->DoHandbrakeStart();
-	Pawn->DoBrakeStart();     // 후미등 켜기 (시각 효과)
+	//물리 시뮬레이션 완전 중지하는 방법은 주석처리 했습니다.
+
+	//Pawn->DoThrottle(0.f);    // 가속 페달 떼기
+	//Pawn->DoSteering(0.f);    // 핸들 중앙으로
+	//Pawn->DoHandbrakeStart();
+	//Pawn->DoBrakeStart();     // 후미등 켜기 (시각 효과)
+
 
 	// 물리 시뮬레이션 완전 중지
-	if (USkeletalMeshComponent* Mesh = Pawn->GetMesh())
-	{
-		Mesh->SetPhysicsLinearVelocity(FVector::ZeroVector);
-		Mesh->SetPhysicsAngularVelocityInDegrees(FVector::ZeroVector);
-		Mesh->SetSimulatePhysics(false);  // ⭐ 핵심: 물리 자체 OFF
-	}
+	//if (USkeletalMeshComponent* Mesh = Pawn->GetMesh())
+	//{
+	//	Mesh->SetPhysicsLinearVelocity(FVector::ZeroVector);
+	//	Mesh->SetPhysicsAngularVelocityInDegrees(FVector::ZeroVector);
+	//	Mesh->SetSimulatePhysics(false);  // 핵심: 물리 자체 OFF
+	//}
 
-	UE_LOG(LogTemp, Log, TEXT("Path completed - vehicle stopping."));
+	//UE_LOG(LogTemp, Log, TEXT("Path completed - vehicle stopping."));
+	//bPathCompleted = true;
+	//SetComponentTickEnabled(false);
+
+
+	//백록담님 블로그 "[트러블슈팅] 차량을 도로 끝에서 멈추게 하기" 부분에서 2차변경 파트 부분 사용했습니다.
+	Pawn->DoThrottle(0.f);
+	Pawn->DoBrake(1.f);       // 실제 브레이크 100%
+	Pawn->DoSteering(0.f);
+	Pawn->DoBrakeStart();     // 후미등
 	bPathCompleted = true;
 	SetComponentTickEnabled(false);
+
 }
 
 //  도로 위 위치/방향/곡률 조회
