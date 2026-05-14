@@ -354,14 +354,54 @@ void ULidarSensorComponent::ApplyTunnelProfile(bool bInTunnel) // 터널에서
 	{
 		CachedNoise = Config.NoiseStdDev;
 		CachedMaxRange = Config.MaxRange;
+
 		Config.NoiseStdDev *= 1.5f;
 		Config.MaxRange *= 0.7f;
+
+		BevConfig.ViewRange = Config.MaxRange;
+		if (BevRenderer)
+			BevRenderer->UpdateConfig(BevConfig);
+
 		RebuildDirectionCache();
 	}
 	else
 	{
 		Config.NoiseStdDev = CachedNoise;
 		Config.MaxRange = CachedMaxRange;
+
+		BevConfig.ViewRange = Config.MaxRange;
+		if (BevRenderer)
+			BevRenderer->UpdateConfig(BevConfig);
+
+		RebuildDirectionCache();
+	}
+}
+
+void ULidarSensorComponent::ApplyWeatherProfile(bool bIsWeatherChanged) // 날씨 바뀔 때
+{
+	if (bIsWeatherChanged)
+	{
+		CachedNoise = Config.NoiseStdDev;
+		CachedMaxRange = Config.MaxRange;
+
+		Config.NoiseStdDev *= 1.5f;
+		Config.MaxRange *= 0.7f;
+
+		BevConfig.ViewRange = Config.MaxRange;
+		if (BevRenderer)
+			BevRenderer->UpdateConfig(BevConfig);
+
+		RebuildDirectionCache();
+	}
+	else
+	{
+		Config.NoiseStdDev = CachedNoise;
+		Config.MaxRange = CachedMaxRange;
+
+		BevConfig.ViewRange = Config.MaxRange;
+		if (BevRenderer)
+			BevRenderer->UpdateConfig(BevConfig);
+
 		RebuildDirectionCache();
 	}
 }

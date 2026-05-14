@@ -1,4 +1,4 @@
-// Copyright NBC, Inc. All Rights Reserved.
+﻿// Copyright NBC, Inc. All Rights Reserved.
 
 #include "Sensor/CameraSensorComponent.h"
 #include "Components/SceneCaptureComponent2D.h"
@@ -421,7 +421,7 @@ void UCameraSensorComponent::ApplyTunnelProfile(bool bInTunnel)
 		Exposure.MinEV -= 2.f;
 		Exposure.MaxEV -= 2.f;
 		PostProcess.BloomIntensity = 1.5f; // 헤드라이트 번짐
-		Noise.GaussianStdDev += 1.5f;
+		Noise.GaussianStdDev *= 1.5f;
 		ApplyPostProcessSettings();
 	}
 	else
@@ -429,6 +429,32 @@ void UCameraSensorComponent::ApplyTunnelProfile(bool bInTunnel)
 		Exposure.MinEV = CachedMinEV;
 		Exposure.MaxEV = CachedMaxEV;
 		PostProcess.BloomIntensity = CachedBloom;
+		Noise.GaussianStdDev = CachedNoise;
+		ApplyPostProcessSettings();
+	}
+}
+
+void UCameraSensorComponent::ApplyWeatherProfile(bool bIsWeatherChanged)
+{
+	if (bIsWeatherChanged)
+	{
+		CachedMinEV = Exposure.MinEV;
+		CachedMaxEV = Exposure.MaxEV;
+		CachedBloom = PostProcess.BloomIntensity;
+		CachedNoise = Noise.GaussianStdDev;
+
+		Exposure.MinEV -= 0.5f;
+		Exposure.MaxEV -= 2.f;
+		PostProcess.BloomIntensity = 1.5f; // 헤드라이트 번짐
+		Noise.GaussianStdDev *= 1.5f;
+		ApplyPostProcessSettings();
+	}
+	else
+	{
+		Exposure.MinEV = CachedMinEV;
+		Exposure.MaxEV = CachedMaxEV;
+		PostProcess.BloomIntensity = CachedBloom;
+		Noise.GaussianStdDev = CachedNoise;
 		ApplyPostProcessSettings();
 	}
 }

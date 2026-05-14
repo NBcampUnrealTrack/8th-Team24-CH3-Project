@@ -57,6 +57,9 @@ private:
 	UFUNCTION(BlueprintCallable, Category = "LidarSensor")
 	void ApplyTunnelProfile(bool bInTunnel); // 터널에서 쓸 함수
 
+	UFUNCTION(BlueprintCallable, Category = "LidarSensor")
+	void ApplyWeatherProfile(bool bIsWeatherChanged); // 날씨 바뀔 때 쓸 함수
+
 private:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "CameraSensor|Config",
 		meta = (AllowPrivateAccess = "true"))
