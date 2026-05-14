@@ -12,6 +12,7 @@
 #include "ChaosWheeledVehicleMovementComponent.h"
 #include "TimerManager.h"
 #include "System/Team24PlayerController.h"
+#include "Components/SpotLightComponent.h"
 //팀원 코드 헤더 추가
 #include"Component/SplineFollowerComponent.h"
 #include"Sensor/CameraSensorComponent.h"
@@ -71,6 +72,20 @@ ATeam24VehiclePawn::ATeam24VehiclePawn()
 	FlipCheckMinDot = -0.2f;
 	//bFrontCameraActive = false;
 	bPreviousFlipCheck = false;
+
+	//헤드라이트 설정
+	LeftHeadLight = CreateDefaultSubobject<USpotLightComponent>(TEXT("LeftHeadLight"));
+	LeftHeadLight->SetupAttachment(GetMesh(), FName("HeadLight_FL"));
+	LeftHeadLight->SetVisibility(false); // 기본상태는 안켜둠
+	LeftHeadLight->OuterConeAngle = 45.0f; // 빛이 퍼지는 각도
+	LeftHeadLight->Intensity = 50000.0f;
+
+	RightHeadLight = CreateDefaultSubobject<USpotLightComponent>(TEXT("RightHeadLight"));
+	RightHeadLight->SetupAttachment(GetMesh(), FName("HeadLight_FR"));
+	RightHeadLight->SetVisibility(false);
+	RightHeadLight->OuterConeAngle = 45.0f;
+	RightHeadLight->Intensity = 50000.0f;
+
 }
 
 void ATeam24VehiclePawn::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)// Pawn (정확히는 Actor) 클래스 안에는 이미 뼈대로 만들어진 InputComponent가 존재해서 매개변수를 변경해줘야 한다.
@@ -300,12 +315,12 @@ void ATeam24VehiclePawn::SetInTunnel(bool bNewInTunnel)
 
 	//터널 헤드라이트 키는 부분(빛이 너무 약함 수정예정)
 	//Pawn에 SpotLight 장착예정
-	if (bNewInTunnel)
+	if (LeftHeadLight && RightHeadLight)
 	{
-		HeadLights(bNewInTunnel);
+		LeftHeadLight->SetVisibility(bNewInTunnel);
+		RightHeadLight->SetVisibility(bNewInTunnel);
 	}
-	else
-	{
-		HeadLights(bNewInTunnel);
-	}
+
+	// 머티리얼이 빛나는 효과(Emission)
+	HeadLights(bNewInTunnel);
 }
