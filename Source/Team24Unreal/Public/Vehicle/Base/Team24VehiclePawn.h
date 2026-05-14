@@ -16,6 +16,7 @@ class USplineFollowerComponent;
 class UAgentDataLogger;
 class UInputComponent;
 struct FInputActionValue;
+class USpotLightComponent;
 
 DECLARE_MULTICAST_DELEGATE_OneParam(FOnTunnelStateChanged, bool);//델리게이트 채널 선언
 
@@ -137,13 +138,19 @@ public:
 	//void DoLookAround(float YawDelta); // 주행 중 주변을 둘러보는 카메라 시점(좌우 회전) 변경을 처리합니다.
 
 	// ---------------------------------------------------------------------------
-	// [Tunnel] - 터널 체크용 델리게이트 파트
+	// [Tunnel] - 터널 체크용 델리게이트 파트 + 터널 라이트 추가
 	// ---------------------------------------------------------------------------
 
 	FOnTunnelStateChanged OnTunnelToggleDelegate;
 
 	UFUNCTION(BlueprintCallable, Category="Tunnel")
 	void SetInTunnel(bool bNewInTunnel);
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category ="Lights", meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<USpotLightComponent> LeftHeadLight;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category ="Lights", meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<USpotLightComponent> RightHeadLight;
 
 	// ---------------------------------------------------------------------------
 	// [Component Getters] - 내부 부품 접근자
@@ -170,6 +177,9 @@ protected:
 	UFUNCTION(BlueprintImplementableEvent, Category="Vehicle")
 	void BrakeLights(bool bBraking); // 브레이크를 밟았을 때 차량 후미등에 불이 들어오는 '시각적 효과'를 켜고 끄는 이벤트 스위치입니다.
 	//BlueprintImplementableEvent로 선언해 구현 부분은 블루프린트에서 설정함
+
+	UFUNCTION(BlueprintImplementableEvent, Category="Vehicle")
+	void HeadLights(bool bdark);
 
 	UFUNCTION()
 	void FlippedCheck(); // 차량이 전복되었는지 계산하고 판단하는 검사 함수
