@@ -17,8 +17,10 @@ class UAgentDataLogger;
 class UInputComponent;
 struct FInputActionValue;
 class USpotLightComponent;
+enum class EWeather : uint8;
 
-DECLARE_MULTICAST_DELEGATE_OneParam(FOnTunnelStateChanged, bool);//델리게이트 채널 선언
+DECLARE_MULTICAST_DELEGATE_OneParam(FOnTunnelStateChanged, bool);//터널 델리게이트 채널 선언
+DECLARE_MULTICAST_DELEGATE_OneParam(FOnWeatherChanged, EWeather);//날씨 델리게이트
 
 /*
  * 헤더에서 USphereComponent* 선언안하는 이유 : UE4 방식 -> TObjectPtr< >: UE5 방식 하지만 cpp에서는 가벼운 *를 사용
@@ -151,6 +153,12 @@ public:
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category ="Lights", meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<USpotLightComponent> RightHeadLight;
+
+	// ---------------------------------------------------------------------------
+	// [Weather] - 날씨용 델리게이트 파트
+	// ---------------------------------------------------------------------------
+
+	FOnWeatherChanged OnWeatherChangedDelegate;
 
 	// ---------------------------------------------------------------------------
 	// [Component Getters] - 내부 부품 접근자

@@ -13,6 +13,8 @@
 #include "TimerManager.h"
 #include "System/Team24PlayerController.h"
 #include "Components/SpotLightComponent.h"
+#include "System/Weather/WeatherSubsystem.h"
+#include "System/Weather/WeatherTypes.h"
 //팀원 코드 헤더 추가
 #include"Component/SplineFollowerComponent.h"
 #include"Sensor/CameraSensorComponent.h"
@@ -126,6 +128,24 @@ void ATeam24VehiclePawn::BeginPlay()
 	// 전복 감지 타이머 가동
 	// TimerManager를 통해 'FlipCheckTimer'를  FlipCheckTime마다 1번씩 FlippedCheck() 함수를 무한 반복(true) 실행시킵니다.
 	GetWorld()->GetTimerManager().SetTimer(FlipCheckTimer, this, &ATeam24VehiclePawn::FlippedCheck, FlipCheckTime, true);
+
+	// ==========================================================
+	// 1. 차량 내부 부품들을 날씨 델리게이트 연결(팀원 코드 합치면 주석 해제
+	// ==========================================================
+	//if (SplineFollower)
+	//	OnWeatherChangedDelegate.AddUObject(SplineFollower, &USplineFollowerComponent::ApplyWeatherProfile);
+	//if (CameraSensor)
+	//	OnWeatherChangedDelegate.AddUObject(CameraSensor, &UCameraSensorComponent::ApplyWeatherProfile);
+	//if (LidarSensor)
+	//	OnWeatherChangedDelegate.AddUObject(LidarSensor, &ULidarSensorComponent::ApplyWeatherProfile);
+
+	// ==========================================================
+	// 2. 날씨 서브시스템 명단에 자신을 등록!
+	// ==========================================================
+	if (UWeatherSubsystem* WeatherSub = GetWorld()->GetSubsystem<UWeatherSubsystem>())
+	{
+		WeatherSub->RegisterVehicle(this);
+	}
 
 	//시작하자마자 View가 보이게 하는 부분
 	DoToggleSensorView();
