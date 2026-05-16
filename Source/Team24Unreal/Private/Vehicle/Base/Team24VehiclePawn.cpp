@@ -130,22 +130,15 @@ void ATeam24VehiclePawn::BeginPlay()
 	GetWorld()->GetTimerManager().SetTimer(FlipCheckTimer, this, &ATeam24VehiclePawn::FlippedCheck, FlipCheckTime, true);
 
 	// ==========================================================
-	// 1. 차량 내부 부품들을 날씨 델리게이트 연결(팀원 코드 합치면 주석 해제
-	// ==========================================================
-	//if (SplineFollower)
-	//	OnWeatherChangedDelegate.AddUObject(SplineFollower, &USplineFollowerComponent::ApplyWeatherProfile);
-	//if (CameraSensor)
-	//	OnWeatherChangedDelegate.AddUObject(CameraSensor, &UCameraSensorComponent::ApplyWeatherProfile);
-	//if (LidarSensor)
-	//	OnWeatherChangedDelegate.AddUObject(LidarSensor, &ULidarSensorComponent::ApplyWeatherProfile);
-
-	// ==========================================================
-	// 2. 날씨 서브시스템 명단에 자신을 등록!
+	// 1. 날씨 서브시스템 명단에 자신을 등록!
 	// ==========================================================
 	if (UWeatherSubsystem* WeatherSub = GetWorld()->GetSubsystem<UWeatherSubsystem>())
 	{
 		WeatherSub->RegisterVehicle(this);
 	}
+
+	// 차량 본체(물리/파티클) 날씨 변경 될 때 변경되는 값을 관리하는 함수
+	//OnWeatherChangedDelegate.AddUObject(this, &ATeam24VehiclePawn::ApplyWeatherPhysicsAndVisual);
 
 	//시작하자마자 View가 보이게 하는 부분
 	DoToggleSensorView();
