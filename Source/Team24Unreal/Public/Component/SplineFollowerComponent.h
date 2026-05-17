@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "Components/ActorComponent.h"
+#include "System/Weather/WeatherTypes.h"
 #include "SplineFollowerComponent.generated.h"
 
 class ATeam24VehiclePawn;
@@ -48,6 +49,10 @@ class TEAM24UNREAL_API USplineFollowerComponent : public UActorComponent
 
 public:
 	USplineFollowerComponent();
+
+	/* 날씨 변경 시 호출 (Pawn의 OnWeatherChangedDelegate 콜백)
+	 *  현재 날씨의 DataAsset에서 LateralFrictionScale을 읽어 적용한다. */
+	void ApplyWeatherProfile(EWeather Weather);
 
 protected:
 	virtual void BeginPlay() override;
@@ -228,6 +233,10 @@ protected:
 	float BaselineMaxSpeed = 0.f;
 	float BaselineLookAheadBase = 0.f;
 	bool  bBaselineCached = false;
+
+	// 날씨 진입 전 원래 LateralFriction 저장 (베이스라인)
+	float BaselineLateralFriction = 0.f;
+	bool  bWeatherBaselineCached = false;
 
 	/* 디버그용 - 매 프레임 명령을 로그로 출력할지 여부 */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Autopilot|Debug",

@@ -68,7 +68,6 @@ ATeam24VehiclePawn::ATeam24VehiclePawn()
 	LidarSensor->SetRelativeLocation(FVector(0.0f, 0.0f, 180.0f));
 
 	SplineFollower = CreateDefaultSubobject<USplineFollowerComponent>(TEXT("SplineFollower"));
-
 	//DataLogger = CreateDefaultSubobject<UAgentDataLogger>(TEXT("DataLogger"));
 
 	FlipCheckTime = 3.0f;
@@ -132,6 +131,11 @@ void ATeam24VehiclePawn::BeginPlay()
 	// ==========================================================
 	// 1. 날씨 서브시스템 명단에 자신을 등록!
 	// ==========================================================
+	if (SplineFollower)
+	{
+		OnWeatherChangedDelegate.AddUObject(SplineFollower, &USplineFollowerComponent::ApplyWeatherProfile);
+	}
+
 	if (UWeatherSubsystem* WeatherSub = GetWorld()->GetSubsystem<UWeatherSubsystem>())
 	{
 		WeatherSub->RegisterVehicle(this);

@@ -5,6 +5,8 @@
 #include "Actor/RoadActor.h"
 #include "Components/SplineComponent.h"
 #include "Vehicle/Base/Team24VehiclePawn.h"
+#include "System/Weather/WeatherSubsystem.h"
+#include "System/Weather/WeatherPresetDataAsset.h"
 
 // EngineUtils.h: TActorIterator (월드의 모든 액터 순회)
 #include "EngineUtils.h"
@@ -462,4 +464,46 @@ void USplineFollowerComponent::OnTunnelToggled(bool bInTunnel)
 
 	UE_LOG(LogTeam24, Log, TEXT("Autopilot tunnel mode: %s, MaxSpeed=%.0f, LookAhead=%.0f"),
 		bInTunnel ? TEXT("ON") : TEXT("OFF"), MaxSpeed, LookAheadBase);
+}
+
+void USplineFollowerComponent::ApplyWeatherProfile(EWeather Weather)
+{
+	// 처음 호출 시 원본 LateralFriction을 한 번만 저장
+	// (이후 어떤 날씨로 바뀌든 항상 이 원본 기준으로 배율 적용)
+	if (!bWeatherBaselineCached)
+	{
+		BaselineLateralFriction = LateralFriction;
+		bWeatherBaselineCached = true;
+	}
+
+	// 월드의 WeatherSubsystem에서 현재 날씨의 DataAsset을 가져온다
+	float FrictionScale = 1.f;  // 기본값: DataAsset 없으면 원본 그대로 (안전)
+
+	if (UWorld* World = GetWorld())
+	{
+		if (UWeatherSubsystem* WeatherSub = World->GetSubsystem<UWeatherSubsystem>())
+		{
+			if (UWeatherPresetDataAsset* Preset = WeatherSub->GetCurrentWeatherPreset())
+			{
+				FrictionScale = Preset->LateralFrictionScale;
+			}
+			else
+			{
+				UE_LOG(LogTeam24, Warning,
+					TEXT("ApplyWeatherProfile: WeatherPreset is null. Using baseline friction."));
+			}
+		}
+	}
+
+	// 원본 × 배율 (현재값에 곱하지 않음 - 누적 오염 방지)
+	LateralFriction = BaselineLateralFriction * FrictionScale;
+
+	// 속도는 직접 건드리지 않는다.
+	// 다음 Tick부터 UpdateTargetSpeed의 FInterpTo가
+	// 낮아진 곡선 안전속도를 향해 부드럽게 감속시킨다.
+
+	UE_LOG(LogTeam24, Log,
+		TEXT("Autopilot weather: %d, LateralFriction=%.3f (base=%.3f x %.2f)"),
+		static_cast<int32>(Weather), LateralFriction,
+		BaselineLateralFriction, FrictionScale);
 }
