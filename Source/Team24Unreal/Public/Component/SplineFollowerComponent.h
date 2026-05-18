@@ -238,6 +238,12 @@ protected:
 	float BaselineLateralFriction = 0.f;
 	bool  bWeatherBaselineCached = false;
 
+	// 날씨 진입 전 원래 DecelRate 저장 (베이스라인)
+	float BaselineDecelRate = 0.f;
+
+	// 날씨 진입 전 원래 MaxSpeed 저장 (베이스라인)
+	float BaselineMaxSpeedWeather = 0.f;
+
 	/* 디버그용 - 매 프레임 명령을 로그로 출력할지 여부 */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Autopilot|Debug",
 		meta=(AllowPrivateAccess="true"))

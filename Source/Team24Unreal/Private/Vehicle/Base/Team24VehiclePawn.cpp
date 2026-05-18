@@ -146,6 +146,18 @@ void ATeam24VehiclePawn::BeginPlay()
 	GetWorld()->GetTimerManager().SetTimer(FlipCheckTimer, this, &ATeam24VehiclePawn::FlippedCheck, FlipCheckTime, true);
 
 	// ==========================================================
+	// 각 컴포넌트 터널 델리게이트 연결하는 곳
+	// ==========================================================
+	if (CameraSensor)
+	{
+		OnTunnelToggleDelegate.AddUObject(CameraSensor, &UCameraSensorComponent::ApplyTunnelProfile);
+	}
+	if (LidarSensor)
+	{
+		OnTunnelToggleDelegate.AddUObject(LidarSensor, &ULidarSensorComponent::ApplyTunnelProfile);
+	}
+
+	// ==========================================================
 	// 각 컴포넌트 날씨 델리게이트 연결하는 곳
 	// ==========================================================
 

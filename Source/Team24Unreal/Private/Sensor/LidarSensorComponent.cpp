@@ -381,8 +381,8 @@ void ULidarSensorComponent::ApplyWeatherProfile(bool bIsWeatherChanged) // ë‚ ì”
 {
 	if (bIsWeatherChanged)
 	{
-		CachedNoise = Config.NoiseStdDev;
-		CachedMaxRange = Config.MaxRange;
+		CachedWeatherNoise = Config.NoiseStdDev;
+		CachedWeatherMaxRange = Config.MaxRange;
 
 		Config.NoiseStdDev *= 1.5f;
 		Config.MaxRange *= 0.7f;
@@ -395,8 +395,8 @@ void ULidarSensorComponent::ApplyWeatherProfile(bool bIsWeatherChanged) // ë‚ ì”
 	}
 	else
 	{
-		Config.NoiseStdDev = CachedNoise;
-		Config.MaxRange = CachedMaxRange;
+		Config.NoiseStdDev = CachedWeatherNoise;
+		Config.MaxRange = CachedWeatherMaxRange;
 
 		BevConfig.ViewRange = Config.MaxRange;
 		if (BevRenderer)
