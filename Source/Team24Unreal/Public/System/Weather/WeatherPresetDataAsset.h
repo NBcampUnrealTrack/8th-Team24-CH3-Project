@@ -31,7 +31,7 @@ public:
 	// ==========================================
 	// 타이어 마찰력 배율 (맑음, 비, 눈 등 환경에 맞춰 조절)
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Weather|Wheel")
-	float TireFrictionScale = 4.0f;
+	float TireFrictionScale = 0.0f;
 
 	// ==========================================================
 	// 3. 자율주행 제어 세팅 (백록담)

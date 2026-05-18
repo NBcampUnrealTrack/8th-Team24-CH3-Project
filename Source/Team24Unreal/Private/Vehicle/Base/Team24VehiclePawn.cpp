@@ -15,6 +15,9 @@
 #include "Components/SpotLightComponent.h"
 #include "System/Weather/WeatherSubsystem.h"
 #include "System/Weather/WeatherTypes.h"
+#include "System/Weather/WeatherPresetDataAsset.h"
+#include "NiagaraComponent.h"
+#include "ChaosVehicleWheel.h"//이거는 모르겠는데 일단 받자
 //팀원 코드 헤더 추가
 #include"Component/SplineFollowerComponent.h"
 #include"Sensor/CameraSensorComponent.h"
@@ -88,6 +91,14 @@ ATeam24VehiclePawn::ATeam24VehiclePawn()
 	RightHeadLight->OuterConeAngle = 45.0f;
 	RightHeadLight->Intensity = 50000.0f;
 
+
+	// 날씨 파티클 컴포넌트 부착 (차량을 따라다니도록)
+	WeatherParticleComponent = CreateDefaultSubobject<UNiagaraComponent>(TEXT("WeatherParticleComponent"));
+	WeatherParticleComponent->SetupAttachment(GetMesh());
+	WeatherParticleComponent->SetRelativeLocation(FVector(0.0f, 0.0f, 300.0f)); // 차 지붕 위 3m 쯤에 배치
+	WeatherParticleComponent->bAutoActivate = false; // 기본적으로 꺼둠
+
+	bIsInTunnel=true;
 }
 
 void ATeam24VehiclePawn::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)// Pawn (정확히는 Actor) 클래스 안에는 이미 뼈대로 만들어진 InputComponent가 존재해서 매개변수를 변경해줘야 한다.
@@ -103,6 +114,10 @@ void ATeam24VehiclePawn::SetupPlayerInputComponent(UInputComponent* PlayerInputC
 		EnhancedInputComponent->BindAction(ToggleCameraViewAction, ETriggerEvent::Started, this, &ATeam24VehiclePawn::ToggleSensorView);
 		// 라이다 뷰 토글 바인딩
 		EnhancedInputComponent->BindAction(ToggleLidarViewAction, ETriggerEvent::Started, this, &ATeam24VehiclePawn::ToggleLidarView);
+		// 날씨 맑음 바인딩
+		EnhancedInputComponent->BindAction(ToggleClearWeatherAction, ETriggerEvent::Started, this, &ATeam24VehiclePawn::ToggleClearWeather);
+		// 날씨 비 바인딩
+		EnhancedInputComponent->BindAction(ToggleRainAction, ETriggerEvent::Started, this, &ATeam24VehiclePawn::ToggleRain);
 
 		// ---------------------------------------------------------------------------
 		// 작동 원리
@@ -129,20 +144,25 @@ void ATeam24VehiclePawn::BeginPlay()
 	GetWorld()->GetTimerManager().SetTimer(FlipCheckTimer, this, &ATeam24VehiclePawn::FlippedCheck, FlipCheckTime, true);
 
 	// ==========================================================
-	// 1. 날씨 서브시스템 명단에 자신을 등록!
+	// 각 컴포넌트 날씨 델리게이트 연결하는 곳
 	// ==========================================================
+
 	if (SplineFollower)
 	{
 		OnWeatherChangedDelegate.AddUObject(SplineFollower, &USplineFollowerComponent::ApplyWeatherProfile);
 	}
 
+	// ==========================================================
+	// 날씨 시스템
+	// ==========================================================
+
+	// 차량 본체(물리/파티클) 날씨 변경 될 때 변경되는 값을 관리하는 함수
+	OnWeatherChangedDelegate.AddUObject(this, &ATeam24VehiclePawn::ApplyWeather);
+
 	if (UWeatherSubsystem* WeatherSub = GetWorld()->GetSubsystem<UWeatherSubsystem>())
 	{
 		WeatherSub->RegisterVehicle(this);
 	}
-
-	// 차량 본체(물리/파티클) 날씨 변경 될 때 변경되는 값을 관리하는 함수
-	//OnWeatherChangedDelegate.AddUObject(this, &ATeam24VehiclePawn::ApplyWeatherPhysicsAndVisual);
 
 	//시작하자마자 View가 보이게 하는 부분
 	DoToggleSensorView();
@@ -175,6 +195,7 @@ void ATeam24VehiclePawn::Tick(float Delta)
 
 	BackSpringArm->SetRelativeRotation(FRotator(0.0f, CameraYaw, 0.0f)); //보간된 값을 SetRelativeRotation으로 갱신
 
+	//디버그용(차량)
 	if (GEngine && ChaosVehicleMovement)
 	{
 		// 1. 현재 속도 (km/h)
@@ -196,6 +217,21 @@ void ATeam24VehiclePawn::Tick(float Delta)
 		GEngine->AddOnScreenDebugMessage(1, 0.0f, FColor::Cyan,
 				  FString::Printf(TEXT("[Vehicle Status] Speed: %.1f km/h | RPM: %.0f | Gear: %d | Cmd: %.2f | Brake: %.2f"),
 					 CurrentSpeedKmh, CurrentRPM, CurrentGear, CurrentThrottle,CurrentBrake));
+	}
+
+	//디버그용(타이어)
+	if (ChaosVehicleMovement->Wheels.Num() >= 4)
+	{
+		// 각 바퀴 인스턴스에 적용된 현재 마찰력을 가져옵니다.
+		float GripFL = ChaosVehicleMovement->Wheels[0]->FrictionForceMultiplier; // 앞바퀴 좌측 (Front Left)
+		float GripFR = ChaosVehicleMovement->Wheels[1]->FrictionForceMultiplier; // 앞바퀴 우측 (Front Right)
+		float GripRL = ChaosVehicleMovement->Wheels[2]->FrictionForceMultiplier; // 뒷바퀴 좌측 (Rear Left)
+		float GripRR = ChaosVehicleMovement->Wheels[3]->FrictionForceMultiplier; // 뒷바퀴 우측 (Rear Right)
+
+		// 기존 메시지와 겹치지 않도록 첫 번째 인자(Key)를 2번으로 설정하고 노란색으로 출력합니다.
+		GEngine->AddOnScreenDebugMessage(2, 0.0f, FColor::Yellow,
+			FString::Printf(TEXT("[Tire Grip] Front(L/R): %.2f / %.2f | Rear(L/R): %.2f / %.2f"),
+				GripFL, GripFR, GripRL, GripRR));
 	}
 }
 
@@ -242,6 +278,17 @@ void ATeam24VehiclePawn::ToggleLidarView(const FInputActionValue& Value)
 {
 	DoToggleLidarView();
 }
+
+void ATeam24VehiclePawn::ToggleClearWeather(const FInputActionValue& Value)
+{
+	DoToggleClearWeather();
+}
+
+void ATeam24VehiclePawn::ToggleRain(const FInputActionValue& Value)
+{
+	DoToggleRain();
+}
+
 
 void ATeam24VehiclePawn::DoResetVehicle()
 {
@@ -351,11 +398,28 @@ void ATeam24VehiclePawn::DoHandbrakeStop()
 	BrakeLights(false);
 }
 
+void ATeam24VehiclePawn::DoToggleClearWeather()
+{
+	if (UWeatherSubsystem* WeatherSub = GetWorld()->GetSubsystem<UWeatherSubsystem>())
+	{
+		WeatherSub->SetWeather(EWeather::Clear); // 강제 맑음
+	}
+}
+
+void ATeam24VehiclePawn::DoToggleRain()
+{
+	if (UWeatherSubsystem* WeatherSub = GetWorld()->GetSubsystem<UWeatherSubsystem>())
+	{
+		WeatherSub->SetWeather(EWeather::Rain);
+	}
+}
+
 void ATeam24VehiclePawn::SetInTunnel(bool bNewInTunnel)
 {
 	UE_LOG(LogTeam24, Log, TEXT("SetInTunnel: %s"),
 		bNewInTunnel ? TEXT("true") : TEXT("false"));
 
+	bIsInTunnel = bNewInTunnel;
 	OnTunnelToggleDelegate.Broadcast(bNewInTunnel);
 
 	//터널 헤드라이트 키는 부분(빛이 너무 약함 수정예정)
@@ -368,4 +432,80 @@ void ATeam24VehiclePawn::SetInTunnel(bool bNewInTunnel)
 
 	// 머티리얼이 빛나는 효과(Emission)
 	HeadLights(bNewInTunnel);
+
+	//파티클 제어(터널)
+	if (WeatherParticleComponent)
+	{
+		if (bIsInTunnel)
+		{
+			// 터널에 들어가면 파티클 끔
+			WeatherParticleComponent->Deactivate();
+		}
+		else
+		{
+			// 터널에서 나왔을 때, 현재 날씨 에셋을 확인해서 비/눈 파티클이 있다면 다시 켬
+			if (UWeatherSubsystem* WeatherSub = GetWorld()->GetSubsystem<UWeatherSubsystem>())
+			{
+				UWeatherPresetDataAsset* Preset = WeatherSub->GetCurrentWeatherPreset();
+
+				// Preset 데이터가 있고, 그 안에 WeatherParticle 에셋이 할당되어
+				if (Preset && Preset->WeatherParticle)
+				{
+					WeatherParticleComponent->SetAsset(Preset->WeatherParticle);
+					WeatherParticleComponent->Activate(true);
+				}
+			}
+		}
+	}
+}
+
+void ATeam24VehiclePawn::ApplyWeather(EWeather Weather)
+{
+	UWeatherSubsystem* WeatherSub = GetWorld()->GetSubsystem<UWeatherSubsystem>();
+	if (!WeatherSub)
+	{
+		return;
+	}
+
+	UWeatherPresetDataAsset* Preset = WeatherSub->FindWeatherPreset(Weather);
+	if (!Preset)
+	{
+		return;
+	}
+
+	// 타이어 그립(마찰력) 변경
+	if (ChaosVehicleMovement)
+	{
+		for (UChaosVehicleWheel* Wheel : ChaosVehicleMovement->Wheels)
+		{
+			if (Wheel)
+			{
+				// 값을 읽어와서 데이터 에셋의 배율(TireFrictionScale)을 곱해 덮어씌움
+				float DefaultFriction = Wheel->GetClass()->GetDefaultObject<UChaosVehicleWheel>()->FrictionForceMultiplier;
+				Wheel->FrictionForceMultiplier = DefaultFriction * Preset->TireFrictionScale;
+			}
+		}
+	}
+
+	// 파티클 시스템 제어
+	if (WeatherParticleComponent)
+	{
+		// 맑음(Clear)처럼 에디터에서 파티클을 비워뒀다면 (None / nullptr), else문으로 빠져서 꺼집니다.
+		if (Preset->WeatherParticle)
+		{
+			// 비나 눈 파티클 에셋으로 갈아 끼움
+			WeatherParticleComponent->SetAsset(Preset->WeatherParticle);
+
+			// 현재 터널 밖일 때만 파티클 재생
+			if (!bIsInTunnel)
+			{
+				WeatherParticleComponent->Activate(true);
+			}
+		}
+		else
+		{
+			// 데이터 에셋에 파티클이 없다면 바로 꺼버림
+			WeatherParticleComponent->Deactivate();
+		}
+	}
 }
