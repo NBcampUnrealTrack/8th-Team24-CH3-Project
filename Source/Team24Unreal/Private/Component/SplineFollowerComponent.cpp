@@ -191,7 +191,28 @@ void USplineFollowerComponent::SampleCurvatures(
 	float& OutCurvHere, float& OutCurvAhead) const
 {
 	OutCurvHere = EstimateCurvature(0.f);              // 현재 위치
-	OutCurvAhead = EstimateCurvature(BrakePreviewDist); // 미리 보고 감속용
+
+	// 전방 구간 스캔 + 거리 가중.
+	// 각 지점 곡률에 (1 - 거리비율)^Falloff 가중을 곱해,
+	// 먼 커브는 약하게 / 가까운 커브는 강하게 반영한다.
+	// → 커브에 다가갈수록 가중이 서서히 커져 '완만한 감속 곡선'을 만든다.
+	float MaxWeightedCurv = 0.f;
+
+	for (float Scan = 0.f; Scan <= BrakePreviewDist; Scan += CurvatureScanStep)
+	{
+		const float Curv = EstimateCurvature(Scan);
+
+		// 거리 비율: 0(코앞) ~ 1(스캔 끝)
+		const float DistRatio = (BrakePreviewDist > KINDA_SMALL_NUMBER)
+			? (Scan / BrakePreviewDist) : 0.f;
+
+		// 가중치: 가까울수록 1, 멀수록 0 (Falloff가 곡선 모양 결정)
+		const float Weight = FMath::Pow(1.f - DistRatio, CurvaturePreviewFalloff);
+
+		MaxWeightedCurv = FMath::Max(MaxWeightedCurv, Curv * Weight);
+	}
+
+	OutCurvAhead = MaxWeightedCurv;
 }
 
 FSteeringErrors USplineFollowerComponent::ComputeSteeringErrors(
@@ -394,6 +415,12 @@ float USplineFollowerComponent::EstimateCurvature(float AheadOffset) const
 	const FVector D1 = GetDirectionAtDistance(CurrentDistance + AheadOffset);
 	const FVector D2 = GetDirectionAtDistance(CurrentDistance + AheadOffset + CurvatureSampleSpan);
 
+	if (USplineComponent* Spline = GetSpline())
+	{
+		const float Len = Spline->GetSplineLength();
+		const float Target = CurrentDistance + AheadOffset;
+	}
+
 	// 단위 벡터 둘의 내적 = cos(각도) → Acos로 각도(라디안) 복원
 	return FMath::Acos(FMath::Clamp(FVector::DotProduct(D1, D2), -1.f, 1.f));
 }
@@ -477,6 +504,12 @@ void USplineFollowerComponent::ApplyWeatherProfile(EWeather Weather)
 		BaselineDecelRate = DecelRate;
 		// 속도 제한
 		BaselineMaxSpeedWeather = MaxSpeed;
+		// 날씨별 전방주시 변경
+		BaselineBrakePreviewDist = BrakePreviewDist;
+		// 날씨별 정지거리 변경
+		BaselineEndApproachDistance = EndApproachDistance;
+		// 날씨별 최소속도 설정
+		BaselineMinSpeed = MinSpeed;
 		bWeatherBaselineCached = true;
 	}
 
@@ -524,8 +557,57 @@ void USplineFollowerComponent::ApplyWeatherProfile(EWeather Weather)
 	}
 	MaxSpeed = WeatherMaxSpeed;
 
+	// 날씨가 나쁠수록 곡선을 더 멀리서 미리 보고 감속 시작
+	float PreviewScale = 1.f;
+	switch (Weather)
+	{
+	case EWeather::Rain:
+		PreviewScale = 1.4f;
+		break;
+	case EWeather::Snow:
+		PreviewScale = 1.6f;
+		break;
+	default:  // Clear
+		PreviewScale = 1.f;
+		break;
+	}
+	BrakePreviewDist = BaselineBrakePreviewDist * PreviewScale;
+
+	// 날씨가 미끄러울수록 더 일찍 멈출 준비 (눈길 제동거리가 길다)
+	float EndApproachScale = 1.f;
+	switch (Weather)
+	{
+	case EWeather::Rain:
+		EndApproachScale = 1.5f;
+		break;
+	case EWeather::Snow:
+		EndApproachScale = 1.8f;
+		break;
+	default:  // Clear
+		EndApproachScale = 1.f;
+		break;
+	}
+	EndApproachDistance = BaselineEndApproachDistance * EndApproachScale;
+
+	// 미끄러운 날씨일수록 커브 최저속도를 올려, 곡선에서 기어가지 않게.
+	// 단, 너무 높이면 급커브 안전속도를 초과해 이탈 위험 → 보수적으로.
+	float WeatherMinSpeed;
+	switch (Weather)
+	{
+	case EWeather::Rain:
+		WeatherMinSpeed = 550.f;   // 시속 ~20
+		break;
+	case EWeather::Snow:
+		WeatherMinSpeed = 750.f;   // 시속 ~27
+		break;
+	default:  // Clear
+		WeatherMinSpeed = BaselineMinSpeed;   // 원본 400 유지
+		break;
+	}
+	MinSpeed = WeatherMinSpeed;
+
 	UE_LOG(LogTeam24, Log,
-		TEXT("Autopilot weather: %d, LateralFriction=%.3f (base=%.3f x %.2f), DecelRate=%.2f, MaxSpeed=%.0f"),
+		TEXT("Autopilot weather: %d, LateralFriction=%.3f (base=%.3f x %.2f), DecelRate=%.2f, MaxSpeed=%.0f, MinSpeed=%.0f, Preview=%.0f, EndApproach=%.0f"),
 		static_cast<int32>(Weather), LateralFriction,
-		BaselineLateralFriction, FrictionScale, DecelRate, MaxSpeed);
+		BaselineLateralFriction, FrictionScale, DecelRate, MaxSpeed, MinSpeed, BrakePreviewDist, EndApproachDistance);
 }
