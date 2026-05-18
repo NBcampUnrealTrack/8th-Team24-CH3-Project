@@ -264,6 +264,15 @@ protected:
 	// 날씨 진입 전 원래 MinSpeed 저장 (베이스라인)
 	float BaselineMinSpeed = 0.f;
 
+	// 터널/날씨 MaxSpeed 합성용
+	// 지금 터널 안인지 (OnTunnelToggled가 갱신)
+	bool  bIsInTunnelNow = false;
+	// 터널 배율을 곱하기 전, 순수 날씨 기준 MaxSpeed (ApplyWeatherProfile가 갱신)
+	float WeatherBaseMaxSpeed = 0.f;
+
+	// 현재 실제 날씨 (터널 안에선 Clear로 취급하되, 원래 날씨는 여기 기억)
+	EWeather CurrentWeather = EWeather::Clear;
+
 	/* 디버그용 - 매 프레임 명령을 로그로 출력할지 여부 */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Autopilot|Debug",
 		meta=(AllowPrivateAccess="true"))
