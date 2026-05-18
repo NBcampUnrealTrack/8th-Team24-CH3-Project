@@ -6,6 +6,9 @@
 #include "Components/SplineComponent.h"
 #include "Components/SplineMeshComponent.h"
 
+//날씨관련 헤더
+#include "System/Weather/WeatherSubsystem.h"
+
 //  생성자
 //  AActor를 상속받았으므로 USplineComponent를 직접 만들어 붙여야 함
 
@@ -23,6 +26,15 @@ ARoadActor::ARoadActor()
 	// false = 시작-끝이 분리된 일반 도로
 	// true  = 순환 도로 (트랙처럼 무한 반복)
 	SplineComponent->SetClosedLoop(false);
+}
+
+void ARoadActor::BeginPlay()
+{
+	Super::BeginPlay();
+	if (UWeatherSubsystem* WeatherSub = GetWorld()->GetSubsystem<UWeatherSubsystem>())
+	{
+		WeatherSub->RegisterRoad(this);
+	}
 }
 
 //  스플라인 편집/액터 이동 시 자동 호출
@@ -86,6 +98,7 @@ void ARoadActor::RebuildRoadMesh()
 	}
 }
 
+
 //  기존 segment 메시들 제거
 //  배열에 추적된 것뿐 아니라 액터에 붙어있는 모든 SplineMeshComponent를 찾아 제거
 //  → 컴파일/재로드 후 추적 안 된 메시들도 안전하게 정리됨
@@ -103,4 +116,27 @@ void ARoadActor::ClearSplineMeshes()
 	}
 
 	SplineMeshes.Reset();
+}
+
+void ARoadActor::SetRoadPhysicsMaterial(class UPhysicalMaterial* NewPM)
+{
+	if (!NewPM) return;
+
+	for (USplineMeshComponent* SMC : SplineMeshes)
+	{
+		if (SMC)
+		{
+			SMC->SetPhysMaterialOverride(NewPM);
+		}
+	}
+}
+
+
+void ARoadActor::EndPlay(const EEndPlayReason::Type EndPlayReason)
+{
+	if (UWeatherSubsystem* WeatherSub = GetWorld()->GetSubsystem<UWeatherSubsystem>())
+	{
+		WeatherSub->UnregisterRoad(this);
+	}
+	Super::EndPlay(EndPlayReason);
 }

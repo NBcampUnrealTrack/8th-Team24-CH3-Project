@@ -21,6 +21,12 @@ public:
 
 	UTextureRenderTarget2D* GetRenderTarget() const { return RenderTarget; }
 
+	UFUNCTION(BlueprintCallable, Category = "LidarSensor")
+	void ApplyTunnelProfile(bool bInTunnel); // 터널에서 쓸 함수
+
+	UFUNCTION(BlueprintCallable, Category = "LidarSensor")
+	void ApplyWeatherProfile(bool bIsWeatherChanged); // 날씨 바뀔 때 쓸 함수
+
 protected:
 	virtual void OnRegister() override;
 	virtual void BeginPlay() override;
@@ -54,11 +60,6 @@ private:
 
 	void SaveCameraImage();
 
-	UFUNCTION(BlueprintCallable, Category = "LidarSensor")
-	void ApplyTunnelProfile(bool bInTunnel); // 터널에서 쓸 함수
-
-	UFUNCTION(BlueprintCallable, Category = "LidarSensor")
-	void ApplyWeatherProfile(bool bIsWeatherChanged); // 날씨 바뀔 때 쓸 함수
 
 private:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "CameraSensor|Config",
@@ -121,4 +122,9 @@ private:
 	float CachedMaxEV = 0.f;
 	float CachedBloom = 0.f;
 	float CachedNoise = 0.f;
+
+	float CachedWeatherMinEV = 0.f;
+	float CachedWeatherMaxEV = 0.f;
+	float CachedWeatherBloom = 0.f;
+	float CachedWeatherNoise = 0.f;
 };

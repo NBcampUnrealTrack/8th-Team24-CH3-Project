@@ -78,8 +78,8 @@ private:
 	// [NiagaraComponent] - 파티클을 달아줄 컴포넌트
 	// ---------------------------------------------------------------------------
 
-	//UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Weather", meta = (AllowPrivateAccess = "true"))
-	//TObjectPtr<UNiagaraComponent> WeatherParticleComponent;
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Weather", meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<UNiagaraComponent> WeatherParticleComponent;
 
 	// ---------------------------------------------------------------------------
 	// [Input Actions] - 컨트롤러의 입력 신호를 수신하기 위한 input 슬롯
@@ -94,6 +94,15 @@ private:
 
 	UPROPERTY(EditAnywhere, Category="Input")
 	TObjectPtr<UInputAction> ToggleLidarViewAction; //라이더센서 시점을 UI를 키는 입력 신호
+
+	UPROPERTY(EditAnywhere, Category="Input")
+	TObjectPtr<UInputAction> ToggleClearWeatherAction; // 날씨를 맑음으로 바꾸는 입력 신호
+
+	UPROPERTY(EditAnywhere, Category="Input")
+	TObjectPtr<UInputAction> ToggleRainAction; //날씨를 비로 바꾸는 입력신호
+
+	UPROPERTY(EditAnywhere, Category="Input")
+	TObjectPtr<UInputAction> ToggleSnowAction; //날씨를 비로 바꾸는 입력신호
 
 	// ---------------------------------------------------------------------------
 	// [Flip Check System] - 차량 전복 감지 변수
@@ -169,8 +178,8 @@ public:
 	FOnWeatherChanged OnWeatherChangedDelegate;
 
 	// 서브시스템이 델리게이트로 날씨를 알려주면 실행될 함수
-	//UFUNCTION()
-	//void ApplyWeather(EWeather Weather);
+	UFUNCTION()
+	void ApplyWeather(EWeather Weather);
 
 
 	// ---------------------------------------------------------------------------
@@ -206,6 +215,7 @@ protected:
 	void FlippedCheck(); // 차량이 전복되었는지 계산하고 판단하는 검사 함수
 
 private:
+	bool bIsInTunnel;// 터널 체크용 변수
 
 	// ---------------------------------------------------------------------------
 	// [Input Handlers] - 향상된 입력(Enhanced Input) 수신용 함수
@@ -217,7 +227,9 @@ private:
 	void ResetVehicle(const FInputActionValue& Value); // '차량 리셋' 입력이 들어왔을 때 신호를 받아주는 수신기
 	void ToggleSensorView(const FInputActionValue& Value); //센서 뷰를 키는 입력이 들어왔을 때 신호를 받아주는 수신기
 	void ToggleLidarView(const FInputActionValue& Value);  //라이다 뷰를 키는 입력이 들어왔을 때 신호를 받아주는 수신기
-
+	void ToggleClearWeather(const FInputActionValue& Value); //날씨 맑음으로 만드는 입력이 들어왔을 때 신호를 받아주는 수신기
+	void ToggleRain(const FInputActionValue& Value); //날씨 비로 만드는 입력이 들어왔을 때 신호를 받아주는 수신기
+	void ToggleSnow(const FInputActionValue& Value);
 
 	// ---------------------------------------------------------------------------
 	// [Action Implementations] - 실제 동작 구현부
@@ -235,4 +247,12 @@ private:
 	UFUNCTION(BlueprintCallable, Category="Input")
 	void DoToggleLidarView(); // 라이다 위젯 화면을 켜거나 끄고, 라이다 센서의 물리적 스캔 작동을 제어하는 함수
 
+	UFUNCTION(BlueprintCallable, Category="Input")
+	void DoToggleClearWeather(); // 날씨를 맑음으로 변경하는걸 실행하는 함수
+
+	UFUNCTION(BlueprintCallable, Category="Input")
+	void DoToggleRain(); // 날씨를 비로 변경하는 걸 실행하는 함수
+
+	UFUNCTION(BlueprintCallable, Category="Input")
+	void DoToggleSnow();
 };

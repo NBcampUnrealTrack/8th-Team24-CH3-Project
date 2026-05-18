@@ -10,7 +10,7 @@
 class USplineComponent;
 class UStaticMesh;
 class UMaterialInterface;
-
+class UPhysicalMaterial;
 /*
  * ARoadActor
  *
@@ -76,6 +76,12 @@ public:
 	// 디테일 패널에서 클릭으로 강제 재빌드
 	UFUNCTION(CallInEditor, Category = "Road|Mesh")
 	void RebuildRoadMesh();
+
+	//날씨 Subsystem 추가 파트
+	virtual void BeginPlay() override;
+	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
+
+	void SetRoadPhysicsMaterial(class UPhysicalMaterial* NewPM);
 
 protected:
 	// 액터 생성/이동/스플라인 편집 시 자동 호출 → 메시 재빌드

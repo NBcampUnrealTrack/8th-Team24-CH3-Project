@@ -473,6 +473,10 @@ void USplineFollowerComponent::ApplyWeatherProfile(EWeather Weather)
 	if (!bWeatherBaselineCached)
 	{
 		BaselineLateralFriction = LateralFriction;
+		// 추가: 원본 DecelRate도 같이 백업
+		BaselineDecelRate = DecelRate;
+		// 속도 제한
+		BaselineMaxSpeedWeather = MaxSpeed;
 		bWeatherBaselineCached = true;
 	}
 
@@ -498,12 +502,30 @@ void USplineFollowerComponent::ApplyWeatherProfile(EWeather Weather)
 	// 원본 × 배율 (현재값에 곱하지 않음 - 누적 오염 방지)
 	LateralFriction = BaselineLateralFriction * FrictionScale;
 
-	// 속도는 직접 건드리지 않는다.
-	// 다음 Tick부터 UpdateTargetSpeed의 FInterpTo가
-	// 낮아진 곡선 안전속도를 향해 부드럽게 감속시킨다.
+	// 마찰이 낮은 날씨일수록 더 공격적으로 감속
+	// FrictionScale이 작을수록(눈길) DecelRate를 크게
+	const float DecelBoost = FMath::Clamp(1.f / (FrictionScale * FrictionScale), 1.f, 12.f);
+	DecelRate = BaselineDecelRate * DecelBoost;
+
+	// 날씨별 최고속도 상한 (곡선 있는 일반도로 기준)
+	// Clear ~80km/h / Rain ~60km/h / Snow ~50km/h
+	float WeatherMaxSpeed;
+	switch (Weather)
+	{
+	case EWeather::Rain:
+		WeatherMaxSpeed = 1700.f;
+		break;
+	case EWeather::Snow:
+		WeatherMaxSpeed = 1400.f;
+		break;
+	default:  // Clear
+		WeatherMaxSpeed = 2200.f;
+		break;
+	}
+	MaxSpeed = WeatherMaxSpeed;
 
 	UE_LOG(LogTeam24, Log,
-		TEXT("Autopilot weather: %d, LateralFriction=%.3f (base=%.3f x %.2f)"),
+		TEXT("Autopilot weather: %d, LateralFriction=%.3f (base=%.3f x %.2f), DecelRate=%.2f, MaxSpeed=%.0f"),
 		static_cast<int32>(Weather), LateralFriction,
-		BaselineLateralFriction, FrictionScale);
+		BaselineLateralFriction, FrictionScale, DecelRate, MaxSpeed);
 }

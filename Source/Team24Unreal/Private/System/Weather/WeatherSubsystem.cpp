@@ -29,6 +29,7 @@ void UWeatherSubsystem::SetWeather(EWeather NewWeather)
 	}
 
 	CurrentWeather = NewWeather;
+	UWeatherPresetDataAsset* Preset = GetCurrentWeatherPreset();
 
 	// 1. 등록된 모든 차량 순회 및 알림
 	for (TArray<TWeakObjectPtr<ATeam24VehiclePawn>>::TIterator It = RegisteredVehicles.CreateIterator(); It; ++It)
@@ -51,7 +52,7 @@ void UWeatherSubsystem::SetWeather(EWeather NewWeather)
 		{
 			// RoadActor에 함수추가
 			// 도로 물리 재질 교체 로직 호출
-			// It->Get()->UpdateRoadPhysicsByWeather(CurrentWeather);
+			It->Get()->SetRoadPhysicsMaterial(Preset->RoadPhysicsMaterial);
 		}
 		else
 		{
