@@ -17,7 +17,8 @@
 #include "System/Weather/WeatherTypes.h"
 #include "System/Weather/WeatherPresetDataAsset.h"
 #include "NiagaraComponent.h"
-#include "ChaosVehicleWheel.h"//이거는 모르겠는데 일단 받자
+#include "ChaosVehicleWheel.h"
+#include "PhysicalMaterials/PhysicalMaterial.h"//디버그용
 //팀원 코드 헤더 추가
 #include"Component/SplineFollowerComponent.h"
 #include"Sensor/CameraSensorComponent.h"
@@ -119,6 +120,7 @@ void ATeam24VehiclePawn::SetupPlayerInputComponent(UInputComponent* PlayerInputC
 		// 날씨 비 바인딩
 		EnhancedInputComponent->BindAction(ToggleRainAction, ETriggerEvent::Started, this, &ATeam24VehiclePawn::ToggleRain);
 
+		EnhancedInputComponent->BindAction(ToggleSnowAction, ETriggerEvent::Started, this, &ATeam24VehiclePawn::ToggleSnow);
 		// ---------------------------------------------------------------------------
 		// 작동 원리
 		// ---------------------------------------------------------------------------
@@ -233,6 +235,20 @@ void ATeam24VehiclePawn::Tick(float Delta)
 			FString::Printf(TEXT("[Tire Grip] Front(L/R): %.2f / %.2f | Rear(L/R): %.2f / %.2f"),
 				GripFL, GripFR, GripRL, GripRR));
 	}
+
+	if (ChaosVehicleMovement->Wheels.Num() > 0)
+	{
+		// 대표로 0번 바퀴(앞바퀴 좌측)가 현재 닿아있는 바닥의 피직스 머티리얼을 가져옵니다.
+		UPhysicalMaterial* ContactMat = ChaosVehicleMovement->Wheels[0]->GetContactSurfaceMaterial();
+
+		// 바닥 재질(PM)이 인식되면 그 이름과 마찰력을, 허공이거나 없으면 None과 1.0f를 반환합니다.
+		FString MatName = ContactMat ? ContactMat->GetName() : TEXT("None");
+		float RoadFriction = ContactMat ? ContactMat->Friction : 1.0f;
+
+		// 기존 1번(Cyan), 2번(Yellow) 메시지와 겹치지 않게 Key를 3번으로 주고 초록색으로 출력합니다.
+		GEngine->AddOnScreenDebugMessage(3, 0.0f, FColor::Green,
+			FString::Printf(TEXT("[Road Surface] Material: %s | Friction: %.2f"), *MatName, RoadFriction));
+	}
 }
 
 void ATeam24VehiclePawn::FlippedCheck()
@@ -287,6 +303,11 @@ void ATeam24VehiclePawn::ToggleClearWeather(const FInputActionValue& Value)
 void ATeam24VehiclePawn::ToggleRain(const FInputActionValue& Value)
 {
 	DoToggleRain();
+}
+
+void ATeam24VehiclePawn::ToggleSnow(const FInputActionValue& Value)
+{
+	DoToggleSnow();
 }
 
 
@@ -411,6 +432,14 @@ void ATeam24VehiclePawn::DoToggleRain()
 	if (UWeatherSubsystem* WeatherSub = GetWorld()->GetSubsystem<UWeatherSubsystem>())
 	{
 		WeatherSub->SetWeather(EWeather::Rain);
+	}
+}
+
+void ATeam24VehiclePawn::DoToggleSnow()
+{
+	if (UWeatherSubsystem* WeatherSub = GetWorld()->GetSubsystem<UWeatherSubsystem>())
+	{
+		WeatherSub->SetWeather(EWeather::Snow);
 	}
 }
 

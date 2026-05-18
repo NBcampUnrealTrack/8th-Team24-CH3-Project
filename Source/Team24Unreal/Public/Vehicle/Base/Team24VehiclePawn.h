@@ -101,6 +101,9 @@ private:
 	UPROPERTY(EditAnywhere, Category="Input")
 	TObjectPtr<UInputAction> ToggleRainAction; //날씨를 비로 바꾸는 입력신호
 
+	UPROPERTY(EditAnywhere, Category="Input")
+	TObjectPtr<UInputAction> ToggleSnowAction; //날씨를 비로 바꾸는 입력신호
+
 	// ---------------------------------------------------------------------------
 	// [Flip Check System] - 차량 전복 감지 변수
 	// ---------------------------------------------------------------------------
@@ -226,6 +229,7 @@ private:
 	void ToggleLidarView(const FInputActionValue& Value);  //라이다 뷰를 키는 입력이 들어왔을 때 신호를 받아주는 수신기
 	void ToggleClearWeather(const FInputActionValue& Value); //날씨 맑음으로 만드는 입력이 들어왔을 때 신호를 받아주는 수신기
 	void ToggleRain(const FInputActionValue& Value); //날씨 비로 만드는 입력이 들어왔을 때 신호를 받아주는 수신기
+	void ToggleSnow(const FInputActionValue& Value);
 
 	// ---------------------------------------------------------------------------
 	// [Action Implementations] - 실제 동작 구현부
@@ -248,4 +252,7 @@ private:
 
 	UFUNCTION(BlueprintCallable, Category="Input")
 	void DoToggleRain(); // 날씨를 비로 변경하는 걸 실행하는 함수
+
+	UFUNCTION(BlueprintCallable, Category="Input")
+	void DoToggleSnow();
 };
