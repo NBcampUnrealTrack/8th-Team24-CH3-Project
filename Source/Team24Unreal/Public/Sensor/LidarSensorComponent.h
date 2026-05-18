@@ -26,7 +26,11 @@ public:
 
 	UFUNCTION(BlueprintPure, Category = "LidarSensor")
 	UTexture2D* GetBevRenderTarget() const; // BEV 텍스처 반환, 블루프린트 퓨어 =  노드에 실행 핀 없음??
+	UFUNCTION(BlueprintCallable, Category = "LidarSensor")
+	void ApplyTunnelProfile(bool bInTunnel); // 터널에서 쓸 함수
 
+	UFUNCTION(BlueprintCallable, Category = "LidarSensor")
+	void ApplyWeatherProfile(bool bIsWeatherChanged); // 날씨 바뀔 때 쓸 함수
 protected:
 	virtual void BeginPlay() override;
 	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
@@ -94,12 +98,6 @@ private:
 	UFUNCTION(BlueprintPure, Category = "LidarSensor")
 	const FLidarPointCloudData& GetPointCloud() const { return LastPointCloud; }
 
-	UFUNCTION(BlueprintCallable, Category = "LidarSensor")
-	void ApplyTunnelProfile(bool bInTunnel); // 터널에서 쓸 함수
-
-	UFUNCTION(BlueprintCallable, Category = "LidarSensor")
-	void ApplyWeatherProfile(bool bIsWeatherChanged); // 날씨 바뀔 때 쓸 함수
-
 	UPROPERTY()
 	TObjectPtr<ULidarBevRenderer> BevRenderer;
 
@@ -123,4 +121,10 @@ private:
 
 	float CachedNoise = 0.f;
 	float CachedMaxRange = 0.f;
+
+	float CachedWeatherNoise = 0.f;
+	float CachedWeatherMaxRange = 0.f;
+
+
+
 };

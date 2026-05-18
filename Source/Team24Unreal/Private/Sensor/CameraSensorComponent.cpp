@@ -438,23 +438,23 @@ void UCameraSensorComponent::ApplyWeatherProfile(bool bIsWeatherChanged)
 {
 	if (bIsWeatherChanged)
 	{
-		CachedMinEV = Exposure.MinEV;
-		CachedMaxEV = Exposure.MaxEV;
-		CachedBloom = PostProcess.BloomIntensity;
-		CachedNoise = Noise.GaussianStdDev;
+		CachedWeatherMinEV = Exposure.MinEV;
+		CachedWeatherMaxEV = Exposure.MaxEV;
+		CachedWeatherBloom = PostProcess.BloomIntensity;
+		CachedWeatherNoise = Noise.GaussianStdDev;
 
 		Exposure.MinEV -= 0.5f;
 		Exposure.MaxEV -= 2.f;
-		PostProcess.BloomIntensity = 1.5f; // 헤드라이트 번짐
+		PostProcess.BloomIntensity *= 1.5f; // 헤드라이트 번짐
 		Noise.GaussianStdDev *= 1.5f;
 		ApplyPostProcessSettings();
 	}
 	else
 	{
-		Exposure.MinEV = CachedMinEV;
-		Exposure.MaxEV = CachedMaxEV;
-		PostProcess.BloomIntensity = CachedBloom;
-		Noise.GaussianStdDev = CachedNoise;
+		Exposure.MinEV = CachedWeatherMinEV;
+		Exposure.MaxEV = CachedWeatherMaxEV;
+		PostProcess.BloomIntensity = CachedWeatherBloom;
+		Noise.GaussianStdDev = CachedWeatherNoise;
 		ApplyPostProcessSettings();
 	}
 }
