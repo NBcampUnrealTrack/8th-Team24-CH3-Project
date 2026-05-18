@@ -462,6 +462,14 @@ void ATeam24VehiclePawn::SetInTunnel(bool bNewInTunnel)
 	// 머티리얼이 빛나는 효과(Emission)
 	HeadLights(bNewInTunnel);
 
+	if (bIsInTunnel)
+	{
+		BrakeLights(true);
+	}
+	else
+	{
+		BrakeLights(false);
+	}
 	//파티클 제어(터널)
 	if (WeatherParticleComponent)
 	{
