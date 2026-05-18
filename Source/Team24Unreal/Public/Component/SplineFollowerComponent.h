@@ -198,6 +198,17 @@ protected:
 		meta=(AllowPrivateAccess="true"))
 	float BrakePreviewDist = 5000.f;
 
+	/* 전방 스캔 시 몇 cm 간격으로 곡률을 측정할지 (작을수록 촘촘, 연산 늘어남) */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Autopilot|Curvature",
+		meta=(ClampMin="100", AllowPrivateAccess="true"))
+	float CurvatureScanStep = 500.f;
+
+	/* 전방 곡률 거리 가중 지수. 클수록 먼 커브를 약하게(완만한 곡선 감속).
+	 *  1=선형, 2=완만한 곡선(기본), 3=가까울 때만 급격히 */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Autopilot|Curvature",
+		meta=(ClampMin="1.0", ClampMax="5.0", AllowPrivateAccess="true"))
+	float CurvaturePreviewFalloff = 2.0f;
+
 	//  파라미터 (도로 탐색)
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Autopilot|Path",
 		meta=(AllowPrivateAccess="true"))
@@ -243,6 +254,15 @@ protected:
 
 	// 날씨 진입 전 원래 MaxSpeed 저장 (베이스라인)
 	float BaselineMaxSpeedWeather = 0.f;
+
+	// 날씨 진입 전 원래 BrakePreviewDist 저장 (베이스라인)
+	float BaselineBrakePreviewDist = 0.f;
+
+	// 날씨 진입 전 원래 EndApproachDistance 저장 (베이스라인)
+	float BaselineEndApproachDistance = 0.f;
+
+	// 날씨 진입 전 원래 MinSpeed 저장 (베이스라인)
+	float BaselineMinSpeed = 0.f;
 
 	/* 디버그용 - 매 프레임 명령을 로그로 출력할지 여부 */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Autopilot|Debug",
