@@ -17,8 +17,11 @@ class UAgentDataLogger;
 class UInputComponent;
 struct FInputActionValue;
 class USpotLightComponent;
+class UNiagaraComponent;
+enum class EWeather : uint8;
 
-DECLARE_MULTICAST_DELEGATE_OneParam(FOnTunnelStateChanged, bool);//델리게이트 채널 선언
+DECLARE_MULTICAST_DELEGATE_OneParam(FOnTunnelStateChanged, bool);//터널 델리게이트 채널 선언
+DECLARE_MULTICAST_DELEGATE_OneParam(FOnWeatherChanged, EWeather);//날씨 델리게이트
 
 /*
  * 헤더에서 USphereComponent* 선언안하는 이유 : UE4 방식 -> TObjectPtr< >: UE5 방식 하지만 cpp에서는 가벼운 *를 사용
@@ -70,6 +73,13 @@ private:
 	TObjectPtr<UChaosWheeledVehicleMovementComponent> ChaosVehicleMovement;
 	//엔진 동력(RPM, 토크), 기어 변속, 서스펜션 압축, 타이어 마찰력 등 차량 이동에 관련된 모든 물리 연산을 총괄하며, 가속, 제동, 조향을 자동차의 실제 움직임으로 변환
 
+
+	// ---------------------------------------------------------------------------
+	// [NiagaraComponent] - 파티클을 달아줄 컴포넌트
+	// ---------------------------------------------------------------------------
+
+	//UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Weather", meta = (AllowPrivateAccess = "true"))
+	//TObjectPtr<UNiagaraComponent> WeatherParticleComponent;
 
 	// ---------------------------------------------------------------------------
 	// [Input Actions] - 컨트롤러의 입력 신호를 수신하기 위한 input 슬롯
@@ -151,6 +161,17 @@ public:
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category ="Lights", meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<USpotLightComponent> RightHeadLight;
+
+	// ---------------------------------------------------------------------------
+	// [Weather] - 날씨용 델리게이트 파트
+	// ---------------------------------------------------------------------------
+
+	FOnWeatherChanged OnWeatherChangedDelegate;
+
+	// 서브시스템이 델리게이트로 날씨를 알려주면 실행될 함수
+	//UFUNCTION()
+	//void ApplyWeather(EWeather Weather);
+
 
 	// ---------------------------------------------------------------------------
 	// [Component Getters] - 내부 부품 접근자

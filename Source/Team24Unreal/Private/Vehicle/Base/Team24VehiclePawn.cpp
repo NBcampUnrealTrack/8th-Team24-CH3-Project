@@ -13,6 +13,8 @@
 #include "TimerManager.h"
 #include "System/Team24PlayerController.h"
 #include "Components/SpotLightComponent.h"
+#include "System/Weather/WeatherSubsystem.h"
+#include "System/Weather/WeatherTypes.h"
 //팀원 코드 헤더 추가
 #include"Component/SplineFollowerComponent.h"
 #include"Sensor/CameraSensorComponent.h"
@@ -55,6 +57,7 @@ ATeam24VehiclePawn::ATeam24VehiclePawn()
 	ChaosVehicleMovement = CastChecked<UChaosWheeledVehicleMovementComponent>(GetVehicleMovement());
 	//부모 클래스가 가지고 있는 기본 무브먼트를 카오스 전용 차량 무브먼트로 강제 형변환(Cast)하여 가져옵니다.
 
+	ChaosVehicleMovement->bReverseAsBrake = false;// 자동 후진(Reverse as Brake) 끄기
 
 	//팀원 코드오면 주석해제
 	CameraSensor = CreateDefaultSubobject<UCameraSensorComponent>(TEXT("CameraSensor"));
@@ -65,7 +68,6 @@ ATeam24VehiclePawn::ATeam24VehiclePawn()
 	LidarSensor->SetRelativeLocation(FVector(0.0f, 0.0f, 180.0f));
 
 	SplineFollower = CreateDefaultSubobject<USplineFollowerComponent>(TEXT("SplineFollower"));
-
 	//DataLogger = CreateDefaultSubobject<UAgentDataLogger>(TEXT("DataLogger"));
 
 	FlipCheckTime = 3.0f;
@@ -125,6 +127,26 @@ void ATeam24VehiclePawn::BeginPlay()
 	// 전복 감지 타이머 가동
 	// TimerManager를 통해 'FlipCheckTimer'를  FlipCheckTime마다 1번씩 FlippedCheck() 함수를 무한 반복(true) 실행시킵니다.
 	GetWorld()->GetTimerManager().SetTimer(FlipCheckTimer, this, &ATeam24VehiclePawn::FlippedCheck, FlipCheckTime, true);
+
+	// ==========================================================
+	// 1. 날씨 서브시스템 명단에 자신을 등록!
+	// ==========================================================
+	if (SplineFollower)
+	{
+		OnWeatherChangedDelegate.AddUObject(SplineFollower, &USplineFollowerComponent::ApplyWeatherProfile);
+	}
+
+	if (UWeatherSubsystem* WeatherSub = GetWorld()->GetSubsystem<UWeatherSubsystem>())
+	{
+		WeatherSub->RegisterVehicle(this);
+	}
+
+	// 차량 본체(물리/파티클) 날씨 변경 될 때 변경되는 값을 관리하는 함수
+	//OnWeatherChangedDelegate.AddUObject(this, &ATeam24VehiclePawn::ApplyWeatherPhysicsAndVisual);
+
+	//시작하자마자 View가 보이게 하는 부분
+	DoToggleSensorView();
+	DoToggleLidarView();
 }
 
 void ATeam24VehiclePawn::EndPlay(EEndPlayReason::Type EndPlayReason)
@@ -152,6 +174,29 @@ void ATeam24VehiclePawn::Tick(float Delta)
 	//현재 Yaw 값을 프레임당 일정 수치만큼 0으로 보간하여, 사용자가 조작하지 않을 때 카메라가 서서히 차량 정면을 바라보게 구현되었습니다.
 
 	BackSpringArm->SetRelativeRotation(FRotator(0.0f, CameraYaw, 0.0f)); //보간된 값을 SetRelativeRotation으로 갱신
+
+	if (GEngine && ChaosVehicleMovement)
+	{
+		// 1. 현재 속도 (km/h)
+		float CurrentSpeedKmh = ChaosVehicleMovement->GetForwardSpeed() * 0.036f;
+
+		// 2. 현재 엔진 회전수(RPM)
+		float CurrentRPM = ChaosVehicleMovement->GetEngineRotationSpeed();
+
+		// 3. 현재 기어 단수 구하기
+		int32 CurrentGear = ChaosVehicleMovement->GetCurrentGear();
+
+		// 현재 엑셀을 얼마나 밟고 있는지 (0.0 ~ 1.0) -> 사실상 가속 Cmd 값
+		float CurrentThrottle = ChaosVehicleMovement->GetThrottleInput();
+
+		// 현재 브레이크를 얼마나 밟고 있는지 (0.0 ~ 1.0) -> 사실상 감속 Cmd 값
+		float CurrentBrake = ChaosVehicleMovement->GetBrakeInput();
+
+		// 화면에 출력
+		GEngine->AddOnScreenDebugMessage(1, 0.0f, FColor::Cyan,
+				  FString::Printf(TEXT("[Vehicle Status] Speed: %.1f km/h | RPM: %.0f | Gear: %d | Cmd: %.2f | Brake: %.2f"),
+					 CurrentSpeedKmh, CurrentRPM, CurrentGear, CurrentThrottle,CurrentBrake));
+	}
 }
 
 void ATeam24VehiclePawn::FlippedCheck()
