@@ -11,6 +11,7 @@ class ATeam24VehiclePawn;
 class UTextureRenderTarget2D;
 class UTexture2D;
 class USensorViewWidget;
+class UDataViewWidget;
 
 UCLASS()
 class TEAM24UNREAL_API ATeam24PlayerController : public APlayerController
@@ -86,4 +87,21 @@ public:
 	//현재 라이다 위젯 화면이 켜져 있는지 확인합니다.
 	//라이다 화면 활성화 여부를 반환하여, 차량 센서가 불필요하게 작동(스캔)하지 않도록 상태를 확인하는 데 쓰입니다.
 
+	// [추가] 데이터 뷰용 입력 액션 (에디터에서 3번 키로 할당된 IA를 넣으세요)
+	UPROPERTY(EditAnywhere, Category = "Input")
+	class UInputAction* IA_ToggleDataView;
+
+	// 데이터 뷰 위젯 설정
+	UPROPERTY(EditAnywhere, Category = "UI|Data")
+	TSubclassOf<UDataViewWidget> DataViewWidgetClass;
+
+	UPROPERTY()
+	UDataViewWidget* DataViewWidget;
+
+	// 타이머 및 상태 변수
+	FTimerHandle DataUpdateTimerHandle;
+	bool bIsDataViewVisible = true;
+
+	// 데이터를 업데이트할 함수
+	void UpdateDataUI() const;
 };

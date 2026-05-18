@@ -8,6 +8,7 @@
 #include "Kismet/GameplayStatics.h"
 #include "GameFramework/PlayerStart.h"
 #include"Sensor/SensorViewWidget.h"
+#include "DataLogger/DataViewWidget.h"
 
 void ATeam24PlayerController::BeginPlay()
 {
@@ -27,6 +28,17 @@ void ATeam24PlayerController::BeginPlay()
 			SensorViewWidget->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
 		}
 	}
+
+	// 데이터 뷰 위젯 미리 생성 (꺼진 상태)
+	if (DataViewWidgetClass)
+	{
+		DataViewWidget = CreateWidget<UDataViewWidget>(this, DataViewWidgetClass);
+		if (DataViewWidget)
+		{
+			DataViewWidget->AddToViewport(); // 레이어 우선순위 5
+		}
+	}
+	GetWorldTimerManager().SetTimer(DataUpdateTimerHandle, this, &ATeam24PlayerController::UpdateDataUI, 0.1f, true);
 }
 
 void ATeam24PlayerController::SetupInputComponent()
@@ -114,5 +126,15 @@ bool ATeam24PlayerController::IsLidarViewVisible() const
 }
 
 
+void ATeam24PlayerController::UpdateDataUI() const
+{
+	// OnPossess에서 VehiclePawn이 이미 할당되어 있다고 가정합니다.
+	if (VehiclePawn && DataViewWidget)
+	{
+		// 차량의 속도를 계산 (cm/s -> km/h)
+		float CurrentSpeed = VehiclePawn->GetVelocity().Size() * 0.036f;
 
-
+		// 위젯에 속도 전달
+		DataViewWidget->UpdateSpeedDisplay(CurrentSpeed);
+	}
+}
