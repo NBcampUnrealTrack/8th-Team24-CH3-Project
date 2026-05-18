@@ -196,7 +196,13 @@ void UWeatherSubsystem::RegisterRoad(class ARoadActor* Road)
 	{
 		RegisteredRoads.AddUnique(Road);
 		// 등록 시점에서 현재 날씨 즉시 적용(도로)
-		// 로직 추가예정
+		if (UWeatherPresetDataAsset* Preset = GetCurrentWeatherPreset())
+		{
+			if (Preset->RoadPhysicsMaterial)
+			{
+				Road->SetRoadPhysicsMaterial(Preset->RoadPhysicsMaterial);
+			}
+		}
 	}
 }
 
