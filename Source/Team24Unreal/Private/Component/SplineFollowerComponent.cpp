@@ -599,7 +599,7 @@ void USplineFollowerComponent::ApplyWeatherProfile(EWeather Weather)
 		WeatherMaxSpeed = 1400.f;
 		break;
 	default:  // Clear
-		WeatherMaxSpeed = 2200.f;
+		WeatherMaxSpeed = 2100.f;
 		break;
 	}
 
@@ -621,7 +621,7 @@ void USplineFollowerComponent::ApplyWeatherProfile(EWeather Weather)
 		PreviewScale = 1.6f;
 		break;
 	default:  // Clear
-		PreviewScale = 1.4f;
+		PreviewScale = 1.0f;
 		break;
 	}
 	BrakePreviewDist = BaselineBrakePreviewDist * PreviewScale;
@@ -637,7 +637,7 @@ void USplineFollowerComponent::ApplyWeatherProfile(EWeather Weather)
 		EndApproachScale = 1.8f;
 		break;
 	default:  // Clear
-		EndApproachScale = 1.f;
+		EndApproachScale = 1.3f;
 		break;
 	}
 	EndApproachDistance = BaselineEndApproachDistance * EndApproachScale;
