@@ -23,7 +23,7 @@ class ATeam24VehiclePawn;
 class ARoadActor;
 
 UCLASS()
-class TEAM24UNREAL_API UWeatherSubsystem : public UWorldSubsystem
+class TEAM24UNREAL_API UWeatherSubsystem : public UTickableWorldSubsystem
 {
 	GENERATED_BODY()
 public:
@@ -33,8 +33,12 @@ public:
 	// 서브시스템은 맵에 배치하는 액터가 아니기 때문에 BeginPlay()나 Destroyed()가 없습니다.
 	// 대신 엔진이 서브시스템을 만들고 부술 때 아래 두 함수를 자동으로 실행해 줍니다.
 	// =================================================================================
-	virtual void Initialize(FSubsystemCollectionBase& Collection) override;//beginplay같은 역할
-	virtual void Deinitialize() override;//Destroyed같은 역할
+	virtual void Initialize(FSubsystemCollectionBase& Collection) override;
+	virtual void Deinitialize() override;
+	virtual void OnWorldBeginPlay(UWorld& InWorld) override;
+	virtual void Tick(float DeltaTime) override;
+	virtual TStatId GetStatId() const override;
+
 
 
 	void SetWeather(EWeather NewWeather); //날씨 설정
@@ -58,6 +62,14 @@ private:
 
 	TArray<TWeakObjectPtr<class ATeam24VehiclePawn>> RegisteredVehicles;
 	TArray<TWeakObjectPtr<class ARoadActor>> RegisteredRoads;
+
+
+	//조명제어
+	bool bIsTransitioningLight;
+	TWeakObjectPtr<class ULightComponent> DirectionalLightComponent;
+	float TargetLightIntensity;
+	FLinearColor TargetLightColor;
+
 };
 
 

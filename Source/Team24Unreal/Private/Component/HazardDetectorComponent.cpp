@@ -94,7 +94,6 @@ void UHazardDetectorComponent::BroadcastSlip(EHazardPhase Phase, float SlipAngle
 	Ev.WorldLocation = Car->GetActorLocation();
 	Ev.Speed         = Speed;
 	Ev.SlipAngleDeg  = SlipAngleDeg;
-	Ev.Severity      = FMath::Clamp(SlipAngleDeg / 45.f, 0.f, 1.f);
 
 	// 임시 작동 확인용 (로거 연결되면 삭제 부탁드려요)
 	if (GEngine)
@@ -165,7 +164,6 @@ void UHazardDetectorComponent::BroadcastLatG(EHazardPhase Phase, float LatG,
 	Ev.WorldLocation = Car->GetActorLocation();
 	Ev.Speed         = Speed;
 	Ev.LateralG      = LatG;
-	Ev.Severity      = FMath::Clamp(LatG / 1.2f, 0.f, 1.f);
 
 	// 임시 작동 확인용 (로거 연결되면 삭제)
 	if (GEngine)
@@ -239,7 +237,6 @@ void UHazardDetectorComponent::BroadcastYaw(EHazardPhase Phase, float YawRate,
 	Ev.WorldLocation = Car->GetActorLocation();
 	Ev.Speed         = Speed;
 	Ev.YawRate       = YawRate;
-	Ev.Severity      = FMath::Clamp(YawRate / 180.f, 0.f, 1.f);
 
 	// 임시 작동 확인용 (로거 연결되면 삭제)
 	if (GEngine)
@@ -430,7 +427,6 @@ void UHazardDetectorComponent::BroadcastSimple(EHazardFlags Flag, EHazardPhase P
 	// 지표 종류에 맞는 전용 칸 채우기
 	if (Flag == EHazardFlags::LaneDeparture)      Ev.CrossTrackError = Value;
 	else if (Flag == EHazardFlags::RolloverRisk)  Ev.RollDeg = Value;
-	Ev.Severity = FMath::Clamp(Value / 100.f, 0.f, 1.f);
 
 	// 임시 작동 확인용 (로거 연결되면 삭제)
 	if (GEngine)

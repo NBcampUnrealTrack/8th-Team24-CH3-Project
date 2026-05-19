@@ -96,11 +96,36 @@ void USplineFollowerComponent::TickComponent(float DeltaTime, ELevelTick TickTyp
 	// 페일세이프: 도로에서 너무 멀어지면 자율주행 일시 정지
 	// 값들은 최종적으로 정리되면 그거에 맞춰서 재수정해야함
 	const FVector RoadHere = GetLocationAtDistance(CurrentDistance);
+	// 차량의 실제 위치와 도로 중앙선 사이의 거리가 허용 오차(MaxRoadDeviation)를 벗어났는지 확인
 	if (FVector::Dist(VehicleLoc, RoadHere) > MaxRoadDeviation)
 	{
-		ApplySpeedCommand(0.f, VehicleSpeed);
-		ApplySteeringCommand(0.f);
-		return;
+		// 도로를 이탈한 상태이므로, 매 프레임 시간(DeltaTime)을 누적하여 이탈 시간 체크
+		CurrentOffRoadTime += DeltaTime;
+
+		// 탈 누적 시간이 설정된 MaxOffRoadTime를 초과했다면 페일세이프(복구)를 가동합니다.
+		if (CurrentOffRoadTime >= MaxOffRoadTime)
+		{
+			RecoverVehicleToRoad(); // 마지막 정상 위치로 차량을 강제 텔레포트 및 물리 리셋
+			return; // 복귀했으니 이번 프레임 연산 종료
+		}
+		else
+		{
+			// MaxOffRoadTime 안 지났다면, 브레이크를 밟으면서 대기
+			ApplySpeedCommand(0.f, VehicleSpeed);
+			ApplySteeringCommand(0.f);
+			return;
+		}
+
+		//ApplySpeedCommand(0.f, VehicleSpeed);
+		//ApplySteeringCommand(0.f);
+		//return;
+	}
+	else
+	{
+		// 정상 주행 상태: 차량이 도로 허용 범위 안에 잘 있다면,
+		// 이탈 타이머를 초기화하고, 현재의 안전한 거리(CurrentDistance)를 '마지막 정상 위치'로 계속 저장해둠.
+		CurrentOffRoadTime = 0.f;
+		LastValidDistance = CurrentDistance;
 	}
 
 	// 2) 곡률 측정 (현재 + 전방)
@@ -466,6 +491,7 @@ USplineComponent* USplineFollowerComponent::GetSpline() const
 	return TargetRoad->GetSplineComponent();
 }
 
+
 void USplineFollowerComponent::OnTunnelToggled(bool bInTunnel)
 {
 	// 터널 진입 전 LookAhead 베이스라인은 1회만 저장 (LookAhead는 날씨와 무관)
@@ -573,7 +599,7 @@ void USplineFollowerComponent::ApplyWeatherProfile(EWeather Weather)
 		WeatherMaxSpeed = 1400.f;
 		break;
 	default:  // Clear
-		WeatherMaxSpeed = 2200.f;
+		WeatherMaxSpeed = 2100.f;
 		break;
 	}
 
@@ -595,7 +621,7 @@ void USplineFollowerComponent::ApplyWeatherProfile(EWeather Weather)
 		PreviewScale = 1.6f;
 		break;
 	default:  // Clear
-		PreviewScale = 1.4f;
+		PreviewScale = 1.0f;
 		break;
 	}
 	BrakePreviewDist = BaselineBrakePreviewDist * PreviewScale;
@@ -611,7 +637,7 @@ void USplineFollowerComponent::ApplyWeatherProfile(EWeather Weather)
 		EndApproachScale = 1.8f;
 		break;
 	default:  // Clear
-		EndApproachScale = 1.f;
+		EndApproachScale = 1.3f;
 		break;
 	}
 	EndApproachDistance = BaselineEndApproachDistance * EndApproachScale;
@@ -637,4 +663,36 @@ void USplineFollowerComponent::ApplyWeatherProfile(EWeather Weather)
 		TEXT("Autopilot weather: %d, LateralFriction=%.3f (base=%.3f x %.2f), DecelRate=%.2f, MaxSpeed=%.0f, MinSpeed=%.0f, Preview=%.0f, EndApproach=%.0f"),
 		static_cast<int32>(EffectiveWeather), LateralFriction,
 		BaselineLateralFriction, FrictionScale, DecelRate, MaxSpeed, MinSpeed, BrakePreviewDist, EndApproachDistance);
+}
+
+//복귀 로직(pawn에 있는 차량 복구 로직을 활용)
+void USplineFollowerComponent::RecoverVehicleToRoad()
+{
+	ATeam24VehiclePawn* Pawn = OwnerPawn.Get();
+	if (!Pawn)
+	{
+		return;
+	}
+
+	// 1. 저장해둔 마지막 정상 거리(LastValidDistance)의 위치와 방향 정보를 가져옴
+	FVector ResetLocation = GetLocationAtDistance(LastValidDistance);
+	FVector RoadDirection = GetDirectionAtDistance(LastValidDistance);
+
+	// 차가 땅바닥에 파묻히지 않도록 Z축으로 50cm 위에서 스폰
+	ResetLocation.Z += 50.0f;
+
+	// 도로가 나아가는 방향을 바라보도록 회전값을 설정
+	// (차가 누워있거나 뒤집힌 상태로 스폰되지 않도록 Pitch와 Roll은 0으로 강제 고정)
+	FRotator ResetRotation = RoadDirection.Rotation();
+	ResetRotation.Pitch = 0.0f;
+	ResetRotation.Roll = 0.0f;
+
+	//차량 복구 함수 실행
+	Pawn->LocationRecoveryVehicle(ResetLocation, ResetRotation);
+
+	// 복구 완료 후 타이머를 초기화
+	CurrentOffRoadTime = 0.f;
+
+	//테스트용 디버그 메시지
+	UE_LOG(LogTeam24, Warning, TEXT("경로 이탈 감지! 마지막 정상 위치로 차량을 안전하게 복구했습니다."));
 }

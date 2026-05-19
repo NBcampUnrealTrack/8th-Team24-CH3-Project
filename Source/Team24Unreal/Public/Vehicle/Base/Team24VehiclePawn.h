@@ -106,6 +106,9 @@ private:
 
 	UPROPERTY(EditAnywhere, Category="Input")
 	TObjectPtr<UInputAction> CyclePresetAction;
+
+	UPROPERTY(EditAnywhere, Category="Input")
+	TObjectPtr<UInputAction> CycleLidarPresetAction;
 	// ---------------------------------------------------------------------------
 	// [Flip Check System] - 차량 전복 감지 변수
 	// ---------------------------------------------------------------------------
@@ -183,6 +186,9 @@ public:
 	UFUNCTION()
 	void ApplyWeather(EWeather Weather);
 
+	//차량을 강제로 복구 시킬때 사용하는 함수(뒤집어지거나 경로이탈때 사용함)
+	UFUNCTION(BlueprintCallable, Category="Vehicle|Recovery")
+	void LocationRecoveryVehicle(const FVector& TargetLocation, const FRotator& TargetRotation);
 
 	// ---------------------------------------------------------------------------
 	// [Component Getters] - 내부 부품 접근자
@@ -259,4 +265,5 @@ private:
 	void DoToggleSnow();
 
 	void CyclePreset();
+	void CycleLidarPreset();
 };
