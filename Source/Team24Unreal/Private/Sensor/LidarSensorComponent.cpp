@@ -15,6 +15,23 @@ ULidarSensorComponent::ULidarSensorComponent()
 	PrimaryComponentTick.bStartWithTickEnabled = false;
 }
 
+void ULidarSensorComponent::CyclePreset()
+{
+	const TArray<ELidarSensorPreset> List =
+		{
+		ELidarSensorPreset::Custom,
+		ELidarSensorPreset::VelodyneVLP16,
+		ELidarSensorPreset::VelodyneVLP32,
+		ELidarSensorPreset::OusterOS1_64,
+		ELidarSensorPreset::Livox_Mid360,
+	};
+	int32 Idx = List.IndexOfByKey(Preset);
+	Preset = List[(Idx + 1) % List.Num()];
+	ApplyPreset(Preset);
+	RefreshSettings();
+
+}
+
 void ULidarSensorComponent::BeginPlay()
 {
 	Super::BeginPlay();

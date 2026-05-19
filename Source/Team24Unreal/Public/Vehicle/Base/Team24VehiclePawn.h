@@ -106,6 +106,9 @@ private:
 
 	UPROPERTY(EditAnywhere, Category="Input")
 	TObjectPtr<UInputAction> CyclePresetAction;
+
+	UPROPERTY(EditAnywhere, Category="Input")
+	TObjectPtr<UInputAction> CycleLidarPresetAction;
 	// ---------------------------------------------------------------------------
 	// [Flip Check System] - 차량 전복 감지 변수
 	// ---------------------------------------------------------------------------
@@ -259,4 +262,5 @@ private:
 	void DoToggleSnow();
 
 	void CyclePreset();
+	void CycleLidarPreset();
 };
