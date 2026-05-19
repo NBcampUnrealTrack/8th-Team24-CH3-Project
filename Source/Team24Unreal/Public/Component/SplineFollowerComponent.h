@@ -54,6 +54,10 @@ public:
 	 *  현재 날씨의 DataAsset에서 LateralFrictionScale을 읽어 적용한다. */
 	void ApplyWeatherProfile(EWeather Weather);
 
+	// 도로 이탈을 허용하는 최대 시간 (몇초 뒤에 강제로 복귀 시킬껀지)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Autopilot|Recovery")
+	float MaxOffRoadTime = 3.0f;
+
 protected:
 	virtual void BeginPlay() override;
 	virtual void TickComponent(float DeltaTime, ELevelTick TickType,
@@ -285,4 +289,13 @@ protected:
 
 	/* 부드럽게 보간된 목표 속도 (cm/s) */
 	float SmoothedTargetSpeed = 0.f;
+
+	// 이탈 시간 누적용 타이머
+	float CurrentOffRoadTime = 0.0f;
+
+	// 마지막으로 정상적으로 밟고 있던 스플라인의 거리(Distance)
+	float LastValidDistance = 0.0f;
+
+	// 차량을 마지막 정상 위치로 텔레포트 시키는 복구 함수
+	void RecoverVehicleToRoad();
 };

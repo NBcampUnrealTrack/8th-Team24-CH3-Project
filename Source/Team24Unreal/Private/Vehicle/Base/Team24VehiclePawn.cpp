@@ -331,6 +331,10 @@ void ATeam24VehiclePawn::DoResetVehicle()
 	ResetRotation.Roll = 0.0f; // 뒤집힌 각도 초기화
 	// 차량이 바라보는 방향(Yaw)은 그대로 유지
 
+	//차량 위치 복구를 하기위한 함수 실행
+	LocationRecoveryVehicle(ResetLocation, ResetRotation);
+
+	/*
 	SetActorTransform(FTransform(ResetRotation, ResetLocation, FVector::OneVector), false, nullptr, ETeleportType::TeleportPhysics);
 	//계산한 새로운 위치와 회전값을 차량에 적용
 	//ETeleportType::TeleportPhysics를 사용하여 일반적인 이동이 아닌 ‘물리적 텔레포트’임을 엔진에 알립니다.
@@ -343,6 +347,7 @@ void ATeam24VehiclePawn::DoResetVehicle()
 	// SetPhysicsAngularVelocityInDegrees: 물체가 도는 회전 속도를 설정
 	// 차가 절벽에서 떨어지면서 팽이처럼 돌고 있었다면, 리셋 후에도 계속 돌려고 할 것입니다.
 	// 이를 0으로 만들어 회전 관성을 0으로해서 멈추게 합니다.
+	*/
 }
 
 void ATeam24VehiclePawn::DoToggleSensorView()
@@ -558,3 +563,19 @@ void ATeam24VehiclePawn::ApplyWeather(EWeather Weather)
 		}
 	}
 }
+
+void ATeam24VehiclePawn::LocationRecoveryVehicle(const FVector& TargetLocation, const FRotator& TargetRotation)
+{
+	SetActorTransform(FTransform(TargetRotation, TargetLocation, FVector::OneVector), false, nullptr, ETeleportType::TeleportPhysics);
+	//계산한 새로운 위치와 회전값을 차량에 적용
+	//ETeleportType::TeleportPhysics를 사용하여 일반적인 이동이 아닌 ‘물리적 텔레포트’임을 엔진에 알립니다.
+	//차가 순간이동하는 궤적 사이에 있는 물체들과 충돌하지 않도록 물리 엔진을 잠깐 끄고 안전하게 옮겨줍니다.
+
+	GetMesh()->SetPhysicsAngularVelocityInDegrees(FVector::ZeroVector);
+	//SetPhysicsLinearVelocity : 물체가 ‘직선 방향으로 날아가거나 이동하는 속도’를 설정
+	// 차가 절벽을 향해 돌진하고 있었다면, 리셋 후에도 허공에서 계속 앞으로 날아갈 것입니다. 이를 0으로 만들어 이동 속도와 관성을 0으로 만들어서 멈추게 합니다.
+ 	GetMesh()->SetPhysicsLinearVelocity(FVector::ZeroVector);
+ 	// SetPhysicsAngularVelocityInDegrees: 물체가 도는 회전 속도를 설정
+ 	// 차가 절벽에서 떨어지면서 팽이처럼 돌고 있었다면, 리셋 후에도 계속 돌려고 할 것입니다.
+ 	// 이를 0으로 만들어 회전 관성을 0으로해서 멈추게 합니다.
+ }
