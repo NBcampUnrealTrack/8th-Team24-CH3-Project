@@ -175,7 +175,7 @@ protected:
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Autopilot|Steering",
 		meta=(ClampMin="0.1", ClampMax="1.0", AllowPrivateAccess="true"))
-	float SharpCurveLookAheadScale = 0.5f;
+	float SharpCurveLookAheadScale = 0.75f;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Autopilot|Steering",
 		meta=(AllowPrivateAccess="true"))
@@ -207,7 +207,7 @@ protected:
 	 *  1=선형, 2=완만한 곡선(기본), 3=가까울 때만 급격히 */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Autopilot|Curvature",
 		meta=(ClampMin="1.0", ClampMax="5.0", AllowPrivateAccess="true"))
-	float CurvaturePreviewFalloff = 2.0f;
+	float CurvaturePreviewFalloff = 1.0f;
 
 	//  파라미터 (도로 탐색)
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Autopilot|Path",
@@ -294,4 +294,12 @@ protected:
 
 	/* 부드럽게 보간된 목표 속도 (cm/s) */
 	float SmoothedTargetSpeed = 0.f;
+
+	/* 가장 최근 계산된 경로 횡오차 (cm, 부호 있음).
+	 * const 함수에서 저장하므로 mutable. HazardDetector가 읽음 */
+	mutable float LatestCrossTrackError = 0.f;
+
+public:
+	/* 현재 경로 중심선에서 벗어난 거리 (cm). 양수=오른쪽, 음수=왼쪽 */
+	float GetCrossTrackError() const { return LatestCrossTrackError; }
 };
