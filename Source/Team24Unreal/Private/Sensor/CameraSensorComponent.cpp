@@ -6,6 +6,7 @@
 #include "HAL/PlatformFileManager.h"  //Hardware Abstraction Layer 플랫폼 상관 없이 동일한 시스템 접근 제공
 #include "IImageWrapper.h" // SaveCameraImage()에서 JPEG 압축에 사용
 #include "IImageWrapperModule.h"
+#include "NavigationSystem.h"
 #include "Materials/MaterialInstanceDynamic.h"
 #include "Misc/FileHelper.h" // JPEG를 파일로 저장
 #include "Misc/Paths.h" // JPEG파일 저장 경로 생성
@@ -458,3 +459,24 @@ void UCameraSensorComponent::ApplyWeatherProfile(bool bIsWeatherChanged)
 		ApplyPostProcessSettings();
 	}
 }
+
+void UCameraSensorComponent::CyclePreset()
+{
+	const TArray<ECameraSensorPreset> List =
+	{
+		ECameraSensorPreset::Custom,
+		ECameraSensorPreset::TeslaHW3_Wide,
+		ECameraSensorPreset::TeslaHW3_Main,
+		ECameraSensorPreset::TeslaHW3_Narrow,
+		ECameraSensorPreset::TeslaHW4,
+		ECameraSensorPreset::DroneFPV,
+		ECameraSensorPreset::Waymo,
+	};
+	int32 Idx = List.IndexOfByKey(Preset);
+	Preset = List[(Idx + 1) % List.Num()];
+	UE_LOG(LogTemp, Warning, TEXT("CyclePreset called, new preset index: %d"),
+ (int32)Preset);
+	ApplyPreset(Preset);
+	RefreshSettings();
+}
+

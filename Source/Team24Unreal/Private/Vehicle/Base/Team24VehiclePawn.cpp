@@ -121,6 +121,8 @@ void ATeam24VehiclePawn::SetupPlayerInputComponent(UInputComponent* PlayerInputC
 		EnhancedInputComponent->BindAction(ToggleRainAction, ETriggerEvent::Started, this, &ATeam24VehiclePawn::ToggleRain);
 
 		EnhancedInputComponent->BindAction(ToggleSnowAction, ETriggerEvent::Started, this, &ATeam24VehiclePawn::ToggleSnow);
+
+		EnhancedInputComponent->BindAction(CyclePresetAction, ETriggerEvent::Started, this, &ATeam24VehiclePawn::CyclePreset);
 		// ---------------------------------------------------------------------------
 		// 작동 원리
 		// ---------------------------------------------------------------------------
@@ -548,5 +550,13 @@ void ATeam24VehiclePawn::ApplyWeather(EWeather Weather)
 			// 데이터 에셋에 파티클이 없다면 바로 꺼버림
 			WeatherParticleComponent->Deactivate();
 		}
+	}
+}
+
+void ATeam24VehiclePawn::CyclePreset()
+{
+	if (CameraSensor)
+	{
+		CameraSensor->CyclePreset();
 	}
 }
