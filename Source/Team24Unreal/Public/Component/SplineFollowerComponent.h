@@ -175,7 +175,7 @@ protected:
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Autopilot|Steering",
 		meta=(ClampMin="0.1", ClampMax="1.0", AllowPrivateAccess="true"))
-	float SharpCurveLookAheadScale = 0.5f;
+	float SharpCurveLookAheadScale = 0.75f;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Autopilot|Steering",
 		meta=(AllowPrivateAccess="true"))
@@ -207,7 +207,7 @@ protected:
 	 *  1=선형, 2=완만한 곡선(기본), 3=가까울 때만 급격히 */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Autopilot|Curvature",
 		meta=(ClampMin="1.0", ClampMax="5.0", AllowPrivateAccess="true"))
-	float CurvaturePreviewFalloff = 2.0f;
+	float CurvaturePreviewFalloff = 1.0f;
 
 	//  파라미터 (도로 탐색)
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Autopilot|Path",

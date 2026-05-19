@@ -57,9 +57,11 @@ public:
 
 	// 판정 기준: 횡G (단위: g)
 
-	/* 진입: 이 횡G를 넘으면 위험 시작 (0.6~0.8g가 타이어 한계 근처) */
+	/* 진입: 이 횡G를 넘으면 위험 시작 (0.6~0.8g가 타이어 한계 근처)
+	 * 근데 우리 차는 스포츠가 기준이라 1.2g 정도로 설정함
+	 */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Hazard|LatG")
-	float LatGEnter = 1.0f;
+	float LatGEnter = 1.2f;
 
 	/* 해제: 이 아래로 떨어지면 위험 끝 (진입보다 낮게 — 깜빡임 방지) */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Hazard|LatG")
@@ -84,11 +86,11 @@ public:
 
 	/* 진입: 중심선에서 이만큼 벗어나면 위험 시작 */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Hazard|Lane")
-	float LaneDepartEnter = 300.f;
+	float LaneDepartEnter = 450.f;
 
 	/* 해제: 이 안쪽으로 돌아오면 위험 끝 (진입보다 낮게 — 깜빡임 방지) */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Hazard|Lane")
-	float LaneDepartExit = 200.f;
+	float LaneDepartExit = 250.f;
 
 	// 판정 기준: 전복 (차체 기울기, 단위: 도)
 

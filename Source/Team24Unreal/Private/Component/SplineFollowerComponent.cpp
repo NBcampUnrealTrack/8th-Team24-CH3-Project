@@ -533,24 +533,25 @@ void USplineFollowerComponent::ApplyWeatherProfile(EWeather Weather)
 		bWeatherBaselineCached = true;
 	}
 
-	// 월드의 WeatherSubsystem에서 현재 날씨의 DataAsset을 가져온다
-	float FrictionScale = 1.f;  // 기본값: DataAsset 없으면 원본 그대로 (안전)
-
-	if (UWorld* World = GetWorld())
+	// 자율주행이 참고하는 마찰은 날씨 종류 3단계로만 직접 결정
+	// 도로 PhysicalMaterial이나 DataAsset의 LateralFrictionScale은 일부러 읽지 않음
+	// → 자율주행은 "지금 눈이니 눈길 기준으로" 정도만 판단하고, 실제 노면이 그보다 더 미끄러우면 그 괴리가 슬립/횡G 위험으로 드러나게 한다.
+	switch (EffectiveWeather)
 	{
-		if (UWeatherSubsystem* WeatherSub = World->GetSubsystem<UWeatherSubsystem>())
-		{
-			if (UWeatherPresetDataAsset* Preset = WeatherSub->GetCurrentWeatherPreset())
-			{
-				FrictionScale = Preset->LateralFrictionScale;
-			}
-			else
-			{
-				UE_LOG(LogTeam24, Warning,
-					TEXT("ApplyWeatherProfile: WeatherPreset is null. Using baseline friction."));
-			}
-		}
+	case EWeather::Rain:
+		LateralFriction = 0.5f;
+		break;
+	case EWeather::Snow:
+		LateralFriction = 0.25f;
+		break;
+	default:  // Clear
+		LateralFriction = 0.7f;
+		break;
 	}
+
+	// 아래 DecelBoost 등이 FrictionScale을 그대로 쓰므로,
+	// 호환을 위해 날씨 마찰에서 역산한 스케일을 만들어 둔다 (Clear 0.8 기준).
+	const float FrictionScale = LateralFriction / 0.8f;
 
 	// 원본 × 배율 (현재값에 곱하지 않음 - 누적 오염 방지)
 	LateralFriction = BaselineLateralFriction * FrictionScale;
@@ -594,7 +595,7 @@ void USplineFollowerComponent::ApplyWeatherProfile(EWeather Weather)
 		PreviewScale = 1.6f;
 		break;
 	default:  // Clear
-		PreviewScale = 1.f;
+		PreviewScale = 1.4f;
 		break;
 	}
 	BrakePreviewDist = BaselineBrakePreviewDist * PreviewScale;
