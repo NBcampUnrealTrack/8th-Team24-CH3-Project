@@ -254,6 +254,9 @@ FSteeringErrors USplineFollowerComponent::ComputeSteeringErrors(
 		Offset - RoadDirHere * FVector::DotProduct(Offset, RoadDirHere),
 		FVector::CrossProduct(FVector::UpVector, RoadDirHere));
 
+	// HazardDetector가 읽을 수 있게 멤버에 저장
+	LatestCrossTrackError = Errors.CrossTrackError;
+
 	return Errors;
 }
 

@@ -294,4 +294,12 @@ protected:
 
 	/* 부드럽게 보간된 목표 속도 (cm/s) */
 	float SmoothedTargetSpeed = 0.f;
+
+	/* 가장 최근 계산된 경로 횡오차 (cm, 부호 있음).
+	 * const 함수에서 저장하므로 mutable. HazardDetector가 읽음 */
+	mutable float LatestCrossTrackError = 0.f;
+
+public:
+	/* 현재 경로 중심선에서 벗어난 거리 (cm). 양수=오른쪽, 음수=왼쪽 */
+	float GetCrossTrackError() const { return LatestCrossTrackError; }
 };
