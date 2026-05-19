@@ -1,4 +1,4 @@
-// Copyright Team24. All Rights Reserved.
+﻿// Copyright Team24. All Rights Reserved.
 
 #pragma once
 
@@ -179,7 +179,7 @@ protected:
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Autopilot|Steering",
 		meta=(ClampMin="0.1", ClampMax="1.0", AllowPrivateAccess="true"))
-	float SharpCurveLookAheadScale = 0.5f;
+	float SharpCurveLookAheadScale = 0.75f;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Autopilot|Steering",
 		meta=(AllowPrivateAccess="true"))
@@ -211,7 +211,7 @@ protected:
 	 *  1=선형, 2=완만한 곡선(기본), 3=가까울 때만 급격히 */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Autopilot|Curvature",
 		meta=(ClampMin="1.0", ClampMax="5.0", AllowPrivateAccess="true"))
-	float CurvaturePreviewFalloff = 2.0f;
+	float CurvaturePreviewFalloff = 1.0f;
 
 	//  파라미터 (도로 탐색)
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Autopilot|Path",
@@ -268,6 +268,15 @@ protected:
 	// 날씨 진입 전 원래 MinSpeed 저장 (베이스라인)
 	float BaselineMinSpeed = 0.f;
 
+	// 터널/날씨 MaxSpeed 합성용
+	// 지금 터널 안인지 (OnTunnelToggled가 갱신)
+	bool  bIsInTunnelNow = false;
+	// 터널 배율을 곱하기 전, 순수 날씨 기준 MaxSpeed (ApplyWeatherProfile가 갱신)
+	float WeatherBaseMaxSpeed = 0.f;
+
+	// 현재 실제 날씨 (터널 안에선 Clear로 취급하되, 원래 날씨는 여기 기억)
+	EWeather CurrentWeather = EWeather::Clear;
+
 	/* 디버그용 - 매 프레임 명령을 로그로 출력할지 여부 */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Autopilot|Debug",
 		meta=(AllowPrivateAccess="true"))
@@ -289,6 +298,14 @@ protected:
 
 	/* 부드럽게 보간된 목표 속도 (cm/s) */
 	float SmoothedTargetSpeed = 0.f;
+
+	/* 가장 최근 계산된 경로 횡오차 (cm, 부호 있음).
+	 * const 함수에서 저장하므로 mutable. HazardDetector가 읽음 */
+	mutable float LatestCrossTrackError = 0.f;
+
+public:
+	/* 현재 경로 중심선에서 벗어난 거리 (cm). 양수=오른쪽, 음수=왼쪽 */
+	float GetCrossTrackError() const { return LatestCrossTrackError; }
 
 	// 이탈 시간 누적용 타이머
 	float CurrentOffRoadTime = 0.0f;

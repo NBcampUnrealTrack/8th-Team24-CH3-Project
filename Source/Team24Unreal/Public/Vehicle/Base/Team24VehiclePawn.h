@@ -104,6 +104,8 @@ private:
 	UPROPERTY(EditAnywhere, Category="Input")
 	TObjectPtr<UInputAction> ToggleSnowAction; //날씨를 비로 바꾸는 입력신호
 
+	UPROPERTY(EditAnywhere, Category="Input")
+	TObjectPtr<UInputAction> CyclePresetAction;
 	// ---------------------------------------------------------------------------
 	// [Flip Check System] - 차량 전복 감지 변수
 	// ---------------------------------------------------------------------------
@@ -258,4 +260,6 @@ private:
 
 	UFUNCTION(BlueprintCallable, Category="Input")
 	void DoToggleSnow();
+
+	void CyclePreset();
 };

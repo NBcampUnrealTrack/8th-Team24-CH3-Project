@@ -279,6 +279,9 @@ FSteeringErrors USplineFollowerComponent::ComputeSteeringErrors(
 		Offset - RoadDirHere * FVector::DotProduct(Offset, RoadDirHere),
 		FVector::CrossProduct(FVector::UpVector, RoadDirHere));
 
+	// HazardDetector가 읽을 수 있게 멤버에 저장
+	LatestCrossTrackError = Errors.CrossTrackError;
+
 	return Errors;
 }
 
@@ -491,36 +494,53 @@ USplineComponent* USplineFollowerComponent::GetSpline() const
 
 void USplineFollowerComponent::OnTunnelToggled(bool bInTunnel)
 {
-	// 처음 호출 시 베이스라인 저장
+	// 터널 진입 전 LookAhead 베이스라인은 1회만 저장 (LookAhead는 날씨와 무관)
 	if (!bBaselineCached)
 	{
-		BaselineMaxSpeed = MaxSpeed;
 		BaselineLookAheadBase = LookAheadBase;
 		bBaselineCached = true;
 	}
 
+	// 터널 상태 갱신 (날씨 합성이 이 값을 참조)
+	bIsInTunnelNow = bInTunnel;
+
+	// 터널 상태가 바뀌면 유효 날씨도 바뀜(터널↔노출).
+	// 실제 날씨로 ApplyWeatherProfile 재호출 → 마찰/감속/Min/Preview 전부 재계산.
+	ApplyWeatherProfile(CurrentWeather);
+
+	// MaxSpeed는 항상 '날씨 기준값 × 터널 배율'로 합성.
+	// WeatherBaseMaxSpeed가 아직 0이면(날씨 콜백 전) 현재 MaxSpeed를 기준으로.
+	const float WeatherBase =
+		(WeatherBaseMaxSpeed > KINDA_SMALL_NUMBER) ? WeatherBaseMaxSpeed : MaxSpeed;
+
 	if (bInTunnel)
 	{
-		// 터널 진입: 속도/전방주시 감소
-		MaxSpeed = BaselineMaxSpeed * TunnelSpeedScale;
+		MaxSpeed = WeatherBase * TunnelSpeedScale;
 		LookAheadBase = BaselineLookAheadBase * TunnelLookAheadScale;
 
-		// 즉시 감속 효과 (현재 속도가 새 MaxSpeed보다 빠르면 클램프)
+		// 즉시 감속 (현재 속도가 새 MaxSpeed보다 빠르면 클램프)
 		SmoothedTargetSpeed = FMath::Min(SmoothedTargetSpeed, MaxSpeed);
 	}
 	else
 	{
-		// 터널 이탈: 원래 값 복원
-		MaxSpeed = BaselineMaxSpeed;
+		MaxSpeed = WeatherBase;                 // 터널 배율 해제 = 날씨 기준값 그대로
 		LookAheadBase = BaselineLookAheadBase;
 	}
 
-	UE_LOG(LogTeam24, Log, TEXT("Autopilot tunnel mode: %s, MaxSpeed=%.0f, LookAhead=%.0f"),
-		bInTunnel ? TEXT("ON") : TEXT("OFF"), MaxSpeed, LookAheadBase);
+	UE_LOG(LogTeam24, Log,
+		TEXT("Autopilot tunnel mode: %s, MaxSpeed=%.0f, LookAhead=%.0f, WeatherBase=%.0f"),
+		bInTunnel ? TEXT("ON") : TEXT("OFF"), MaxSpeed, LookAheadBase, WeatherBase);
 }
 
 void USplineFollowerComponent::ApplyWeatherProfile(EWeather Weather)
 {
+	// 실제 날씨 기억 (터널을 나갈 때 이 값으로 복귀)
+	CurrentWeather = Weather;
+
+	// 터널 안이면 날씨를 Clear로 간주.
+	// (터널은 비/눈이 안 들이쳐 노면이 안 젖음 → 날씨 영향 없음)
+	const EWeather EffectiveWeather = bIsInTunnelNow ? EWeather::Clear : Weather;
+
 	// 처음 호출 시 원본 LateralFriction을 한 번만 저장
 	// (이후 어떤 날씨로 바뀌든 항상 이 원본 기준으로 배율 적용)
 	if (!bWeatherBaselineCached)
@@ -539,24 +559,25 @@ void USplineFollowerComponent::ApplyWeatherProfile(EWeather Weather)
 		bWeatherBaselineCached = true;
 	}
 
-	// 월드의 WeatherSubsystem에서 현재 날씨의 DataAsset을 가져온다
-	float FrictionScale = 1.f;  // 기본값: DataAsset 없으면 원본 그대로 (안전)
-
-	if (UWorld* World = GetWorld())
+	// 자율주행이 참고하는 마찰은 날씨 종류 3단계로만 직접 결정
+	// 도로 PhysicalMaterial이나 DataAsset의 LateralFrictionScale은 일부러 읽지 않음
+	// → 자율주행은 "지금 눈이니 눈길 기준으로" 정도만 판단하고, 실제 노면이 그보다 더 미끄러우면 그 괴리가 슬립/횡G 위험으로 드러나게 한다.
+	switch (EffectiveWeather)
 	{
-		if (UWeatherSubsystem* WeatherSub = World->GetSubsystem<UWeatherSubsystem>())
-		{
-			if (UWeatherPresetDataAsset* Preset = WeatherSub->GetCurrentWeatherPreset())
-			{
-				FrictionScale = Preset->LateralFrictionScale;
-			}
-			else
-			{
-				UE_LOG(LogTeam24, Warning,
-					TEXT("ApplyWeatherProfile: WeatherPreset is null. Using baseline friction."));
-			}
-		}
+	case EWeather::Rain:
+		LateralFriction = 0.5f;
+		break;
+	case EWeather::Snow:
+		LateralFriction = 0.25f;
+		break;
+	default:  // Clear
+		LateralFriction = 0.7f;
+		break;
 	}
+
+	// 아래 DecelBoost 등이 FrictionScale을 그대로 쓰므로,
+	// 호환을 위해 날씨 마찰에서 역산한 스케일을 만들어 둔다 (Clear 0.8 기준).
+	const float FrictionScale = LateralFriction / 0.8f;
 
 	// 원본 × 배율 (현재값에 곱하지 않음 - 누적 오염 방지)
 	LateralFriction = BaselineLateralFriction * FrictionScale;
@@ -569,7 +590,7 @@ void USplineFollowerComponent::ApplyWeatherProfile(EWeather Weather)
 	// 날씨별 최고속도 상한 (곡선 있는 일반도로 기준)
 	// Clear ~80km/h / Rain ~60km/h / Snow ~50km/h
 	float WeatherMaxSpeed;
-	switch (Weather)
+	switch (EffectiveWeather)
 	{
 	case EWeather::Rain:
 		WeatherMaxSpeed = 1700.f;
@@ -581,7 +602,13 @@ void USplineFollowerComponent::ApplyWeatherProfile(EWeather Weather)
 		WeatherMaxSpeed = 2200.f;
 		break;
 	}
-	MaxSpeed = WeatherMaxSpeed;
+
+	// 순수 날씨 기준값 저장 (터널 배율 미적용 — 합성의 기준점)
+	WeatherBaseMaxSpeed = WeatherMaxSpeed;
+
+	// 최종 MaxSpeed = 날씨 기준값 × (터널 안이면 터널 배율)
+	// 터널이 바뀌든 날씨가 바뀌든 항상 이 공식으로 수렴 → 덮어쓰기 충돌 제거
+	MaxSpeed = WeatherBaseMaxSpeed * (bIsInTunnelNow ? TunnelSpeedScale : 1.f);
 
 	// 날씨가 나쁠수록 곡선을 더 멀리서 미리 보고 감속 시작
 	float PreviewScale = 1.f;
@@ -594,7 +621,7 @@ void USplineFollowerComponent::ApplyWeatherProfile(EWeather Weather)
 		PreviewScale = 1.6f;
 		break;
 	default:  // Clear
-		PreviewScale = 1.f;
+		PreviewScale = 1.4f;
 		break;
 	}
 	BrakePreviewDist = BaselineBrakePreviewDist * PreviewScale;
@@ -634,7 +661,7 @@ void USplineFollowerComponent::ApplyWeatherProfile(EWeather Weather)
 
 	UE_LOG(LogTeam24, Log,
 		TEXT("Autopilot weather: %d, LateralFriction=%.3f (base=%.3f x %.2f), DecelRate=%.2f, MaxSpeed=%.0f, MinSpeed=%.0f, Preview=%.0f, EndApproach=%.0f"),
-		static_cast<int32>(Weather), LateralFriction,
+		static_cast<int32>(EffectiveWeather), LateralFriction,
 		BaselineLateralFriction, FrictionScale, DecelRate, MaxSpeed, MinSpeed, BrakePreviewDist, EndApproachDistance);
 }
 

@@ -19,6 +19,9 @@ class TEAM24UNREAL_API UCameraSensorComponent : public USceneComponent
 public:
 	UCameraSensorComponent();
 
+	UFUNCTION(BlueprintCallable, Category = "CameraSensor")
+	void CyclePreset();
+
 	UTextureRenderTarget2D* GetRenderTarget() const { return RenderTarget; }
 
 	UFUNCTION(BlueprintCallable, Category = "LidarSensor")

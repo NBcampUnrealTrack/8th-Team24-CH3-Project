@@ -1,4 +1,4 @@
-// Fill out your copyright notice in the Description page of Project Settings.
+﻿// Fill out your copyright notice in the Description page of Project Settings.
 
 
 #include "Vehicle/Base/Team24VehiclePawn.h"
@@ -121,6 +121,8 @@ void ATeam24VehiclePawn::SetupPlayerInputComponent(UInputComponent* PlayerInputC
 		EnhancedInputComponent->BindAction(ToggleRainAction, ETriggerEvent::Started, this, &ATeam24VehiclePawn::ToggleRain);
 
 		EnhancedInputComponent->BindAction(ToggleSnowAction, ETriggerEvent::Started, this, &ATeam24VehiclePawn::ToggleSnow);
+
+		EnhancedInputComponent->BindAction(CyclePresetAction, ETriggerEvent::Started, this, &ATeam24VehiclePawn::CyclePreset);
 		// ---------------------------------------------------------------------------
 		// 작동 원리
 		// ---------------------------------------------------------------------------
@@ -579,3 +581,11 @@ void ATeam24VehiclePawn::LocationRecoveryVehicle(const FVector& TargetLocation, 
  	// 차가 절벽에서 떨어지면서 팽이처럼 돌고 있었다면, 리셋 후에도 계속 돌려고 할 것입니다.
  	// 이를 0으로 만들어 회전 관성을 0으로해서 멈추게 합니다.
  }
+
+void ATeam24VehiclePawn::CyclePreset()
+{
+	if (CameraSensor)
+	{
+		CameraSensor->CyclePreset();
+	}
+}
