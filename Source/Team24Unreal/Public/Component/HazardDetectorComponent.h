@@ -86,11 +86,11 @@ public:
 
 	/* 진입: 중심선에서 이만큼 벗어나면 위험 시작 */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Hazard|Lane")
-	float LaneDepartEnter = 450.f;
+	float LaneDepartEnter = 300.f;
 
 	/* 해제: 이 안쪽으로 돌아오면 위험 끝 (진입보다 낮게 — 깜빡임 방지) */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Hazard|Lane")
-	float LaneDepartExit = 250.f;
+	float LaneDepartExit = 150.f;
 
 	// 판정 기준: 전복 (차체 기울기, 단위: 도)
 
