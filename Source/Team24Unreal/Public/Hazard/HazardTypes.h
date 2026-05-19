@@ -67,9 +67,6 @@ struct FHazardEvent
 
 	UPROPERTY(BlueprintReadOnly)
 	float RollDeg = 0.f;
-
-	UPROPERTY(BlueprintReadOnly)
-	float Severity = 0.f;
 };
 
 // 위험 발생 시 이 채널로 델리게이트
