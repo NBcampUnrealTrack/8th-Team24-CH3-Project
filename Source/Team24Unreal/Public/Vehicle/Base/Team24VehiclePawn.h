@@ -58,8 +58,8 @@ private:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category ="Components", meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<ULidarSensorComponent> LidarSensor; //라이다 센서
 
-	//UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category ="Components", meta = (AllowPrivateAccess = "true"))
-	//TObjectPtr<UAgentDataLogger> DataLogger; //데이터 로거
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category ="Components", meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<UAgentDataLogger> DataLogger; //데이터 로거
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category ="Components", meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<USplineFollowerComponent> SplineFollower; //자동 주행

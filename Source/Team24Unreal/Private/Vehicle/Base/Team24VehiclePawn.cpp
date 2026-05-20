@@ -23,6 +23,7 @@
 #include"Component/SplineFollowerComponent.h"
 #include"Sensor/CameraSensorComponent.h"
 #include"Sensor/LidarSensorComponent.h"
+#include"DataLogger/AgentDataLogger.h"
 
 
 ATeam24VehiclePawn::ATeam24VehiclePawn()
@@ -72,7 +73,7 @@ ATeam24VehiclePawn::ATeam24VehiclePawn()
 	LidarSensor->SetRelativeLocation(FVector(0.0f, 0.0f, 180.0f));
 
 	SplineFollower = CreateDefaultSubobject<USplineFollowerComponent>(TEXT("SplineFollower"));
-	//DataLogger = CreateDefaultSubobject<UAgentDataLogger>(TEXT("DataLogger"));
+	DataLogger = CreateDefaultSubobject<UAgentDataLogger>(TEXT("DataLogger"));
 
 	FlipCheckTime = 3.0f;
 	FlipCheckMinDot = -0.2f;
