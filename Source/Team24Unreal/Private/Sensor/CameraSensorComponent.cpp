@@ -421,7 +421,7 @@ void UCameraSensorComponent::ApplyTunnelProfile(bool bInTunnel)
 
 		Exposure.MinEV -= 2.f;
 		Exposure.MaxEV -= 2.f;
-		PostProcess.BloomIntensity *= 1.5f; // 헤드라이트 번짐
+		PostProcess.BloomIntensity = 1.5f; // 헤드라이트 번짐
 		Noise.GaussianStdDev *= 1.5f;
 		ApplyPostProcessSettings();
 	}
@@ -460,9 +460,23 @@ void UCameraSensorComponent::ApplyWeatherProfile(bool bIsWeatherChanged)
 	}
 }
 
+FString UCameraSensorComponent::GetPresetName() const
+{
+	switch (Preset)
+	{
+	case ECameraSensorPreset::TeslaHW3_Wide:   return TEXT("Tesla HW3 Wide");
+	case ECameraSensorPreset::TeslaHW3_Main:   return TEXT("Tesla HW3 Main");
+	case ECameraSensorPreset::TeslaHW3_Narrow: return TEXT("Tesla HW3 Narrow");
+	case ECameraSensorPreset::TeslaHW4:        return TEXT("Tesla HW4");
+	case ECameraSensorPreset::DroneFPV:        return TEXT("Drone FPV");
+	case ECameraSensorPreset::Waymo:           return TEXT("Waymo");
+	default:                                   return TEXT("Custom");
+	}
+}
+
 void UCameraSensorComponent::CyclePreset()
 {
-	static const TArray<ECameraSensorPreset> List =
+	const TArray<ECameraSensorPreset> List =
 	{
 		ECameraSensorPreset::Custom,
 		ECameraSensorPreset::TeslaHW3_Wide,
@@ -474,6 +488,8 @@ void UCameraSensorComponent::CyclePreset()
 	};
 	int32 Idx = List.IndexOfByKey(Preset);
 	Preset = List[(Idx + 1) % List.Num()];
+	UE_LOG(LogTemp, Warning, TEXT("CyclePreset called, new preset index: %d"),
+ (int32)Preset);
 	ApplyPreset(Preset);
 	RefreshSettings();
 }

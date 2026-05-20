@@ -22,6 +22,9 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "CameraSensor")
 	void CyclePreset();
 
+	UFUNCTION(BlueprintCallable, Category = "CameraSensor")
+	FString GetPresetName() const;
+
 	UTextureRenderTarget2D* GetRenderTarget() const { return RenderTarget; }
 
 	UFUNCTION(BlueprintCallable, Category = "LidarSensor")

@@ -15,10 +15,22 @@ ULidarSensorComponent::ULidarSensorComponent()
 	PrimaryComponentTick.bStartWithTickEnabled = false;
 }
 
+FString ULidarSensorComponent::GetPresetName() const
+{
+	switch (Preset)
+	{
+	case ELidarSensorPreset::VelodyneVLP16: return TEXT("Velodyne VLP-16");
+	case ELidarSensorPreset::VelodyneVLP32: return TEXT("Velodyne VLP-32C");
+	case ELidarSensorPreset::OusterOS1_64:  return TEXT("Ouster OS1-64");
+	case ELidarSensorPreset::Livox_Mid360:  return TEXT("Livox Mid-360");
+	default:                                return TEXT("Custom");
+	}
+}
+
 void ULidarSensorComponent::CyclePreset()
 {
 	static const TArray<ELidarSensorPreset> List =
-		{
+	{
 		ELidarSensorPreset::Custom,
 		ELidarSensorPreset::VelodyneVLP16,
 		ELidarSensorPreset::VelodyneVLP32,
@@ -29,7 +41,6 @@ void ULidarSensorComponent::CyclePreset()
 	Preset = List[(Idx + 1) % List.Num()];
 	ApplyPreset(Preset);
 	RefreshSettings();
-
 }
 
 void ULidarSensorComponent::BeginPlay()

@@ -124,9 +124,9 @@ void ATeam24VehiclePawn::SetupPlayerInputComponent(UInputComponent* PlayerInputC
 		EnhancedInputComponent->BindAction(ToggleSnowAction, ETriggerEvent::Started, this, &ATeam24VehiclePawn::ToggleSnow);
 
 		EnhancedInputComponent->BindAction(CyclePresetAction, ETriggerEvent::Started, this, &ATeam24VehiclePawn::CyclePreset);
-
 		EnhancedInputComponent->BindAction(CycleLidarPresetAction, ETriggerEvent::Started, this, &ATeam24VehiclePawn::CycleLidarPreset);
-		// ---------------------------------------------------------------------------
+
+// ---------------------------------------------------------------------------
 		// 작동 원리
 		// ---------------------------------------------------------------------------
 		// 1. 규칙 제출 (Controller): 게임 시작 시, 어떤 키가 어떤 신호(InputAction)를 발생시킬지 적힌 사전(MappingContext)을 엔진에 등록이 됩니다.
@@ -605,5 +605,4 @@ void ATeam24VehiclePawn::CycleLidarPreset()
 		LidarSensor->CyclePreset();
 	}
 }
-
 

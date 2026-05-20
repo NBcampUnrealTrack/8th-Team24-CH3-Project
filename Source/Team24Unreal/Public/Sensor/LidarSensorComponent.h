@@ -17,8 +17,11 @@ class TEAM24UNREAL_API ULidarSensorComponent : public USceneComponent
 
 public:
 	ULidarSensorComponent();
-    UFUNCTION()
+
 	void CyclePreset();
+
+	UFUNCTION(BlueprintCallable, Category = "LidarSensor")
+	FString GetPresetName() const;
 
 	UFUNCTION(BlueprintCallable, Category = "LidarSensor")
 	void StartScan();
