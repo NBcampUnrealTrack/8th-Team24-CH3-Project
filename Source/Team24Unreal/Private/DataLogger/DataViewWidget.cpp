@@ -9,7 +9,7 @@ void UDataViewWidget::UpdateSpeedDisplay(float NewSpeed) const
 	{
 		// km/h 단위를 문자열로 변환 (예: 60.5 km/h)
 		FText SpeedValueText = FText::AsNumber(FMath::RoundToFloat(NewSpeed * 10.0f) / 10.0f);
-		FText FullText = FText::Format(NSLOCTEXT("UI", "SpeedFormat", "{0} km/h"), SpeedValueText);
+		FText FullText = FText::Format(NSLOCTEXT("UI", "SpeedFormat", "{0}"), SpeedValueText);
 
 		SpeedText->SetText(FullText);
 	}
