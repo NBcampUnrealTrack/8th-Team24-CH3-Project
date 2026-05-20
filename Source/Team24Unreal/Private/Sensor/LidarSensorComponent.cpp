@@ -17,7 +17,7 @@ ULidarSensorComponent::ULidarSensorComponent()
 
 void ULidarSensorComponent::CyclePreset()
 {
-	const TArray<ELidarSensorPreset> List =
+	static const TArray<ELidarSensorPreset> List =
 		{
 		ELidarSensorPreset::Custom,
 		ELidarSensorPreset::VelodyneVLP16,

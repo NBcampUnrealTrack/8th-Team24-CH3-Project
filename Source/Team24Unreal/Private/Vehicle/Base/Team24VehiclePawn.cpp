@@ -566,6 +566,11 @@ void ATeam24VehiclePawn::ApplyWeather(EWeather Weather)
 			WeatherParticleComponent->Deactivate();
 		}
 	}
+	bool bIsWeather = (Weather != EWeather::Clear);
+	if (CameraSensor)
+		CameraSensor->ApplyWeatherProfile(bIsWeather);
+	if (LidarSensor)
+		LidarSensor->ApplyWeatherProfile(bIsWeather);
 }
 
 void ATeam24VehiclePawn::LocationRecoveryVehicle(const FVector& TargetLocation, const FRotator& TargetRotation)
