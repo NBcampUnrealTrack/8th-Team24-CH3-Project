@@ -421,7 +421,7 @@ void UCameraSensorComponent::ApplyTunnelProfile(bool bInTunnel)
 
 		Exposure.MinEV -= 2.f;
 		Exposure.MaxEV -= 2.f;
-		PostProcess.BloomIntensity = 1.5f; // 헤드라이트 번짐
+		PostProcess.BloomIntensity *= 1.5f; // 헤드라이트 번짐
 		Noise.GaussianStdDev *= 1.5f;
 		ApplyPostProcessSettings();
 	}
@@ -462,7 +462,7 @@ void UCameraSensorComponent::ApplyWeatherProfile(bool bIsWeatherChanged)
 
 void UCameraSensorComponent::CyclePreset()
 {
-	const TArray<ECameraSensorPreset> List =
+	static const TArray<ECameraSensorPreset> List =
 	{
 		ECameraSensorPreset::Custom,
 		ECameraSensorPreset::TeslaHW3_Wide,
@@ -474,8 +474,6 @@ void UCameraSensorComponent::CyclePreset()
 	};
 	int32 Idx = List.IndexOfByKey(Preset);
 	Preset = List[(Idx + 1) % List.Num()];
-	UE_LOG(LogTemp, Warning, TEXT("CyclePreset called, new preset index: %d"),
- (int32)Preset);
 	ApplyPreset(Preset);
 	RefreshSettings();
 }

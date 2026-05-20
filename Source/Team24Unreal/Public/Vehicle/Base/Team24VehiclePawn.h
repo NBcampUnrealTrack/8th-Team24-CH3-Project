@@ -264,6 +264,8 @@ private:
 	UFUNCTION(BlueprintCallable, Category="Input")
 	void DoToggleSnow();
 
+	UFUNCTION(BlueprintCallable, Category="Input")
 	void CyclePreset();
+	UFUNCTION(BlueprintCallable, Category="Input")
 	void CycleLidarPreset();
 };
