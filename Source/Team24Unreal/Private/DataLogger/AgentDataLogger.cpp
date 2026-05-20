@@ -5,7 +5,9 @@
 #include "Misc/FileHelper.h"
 #include "Misc/Paths.h"
 // 디버그 드로잉을 위한 헤더 추가
-#include "DrawDebugHelpers.h"
+// #include "DrawDebugHelpers.h"
+// 팀원이 만든 컴포넌트 헤더 포함
+#include "Component/HazardDetectorComponent.h"
 
 UAgentDataLogger::UAgentDataLogger()
 {
@@ -25,6 +27,25 @@ void UAgentDataLogger::BeginPlay()
 	if (bEnableLogging)
 	{
 		StartRecording();
+	}
+
+	// 1. Hazard용 CSV 파일 생성 및 헤더 작성
+	CreateHazardLogFile();
+
+	// 2. 차량에서 컴포넌트 찾아 구독 (로거가 차량에 부착된 Component라면 GetOwner() 사용, Actor라면 타겟 차량 포인터 사용)
+	AActor* TargetVehicle = GetOwner(); // 차량 포인터로 적절히 수정하세요.
+
+	if (TargetVehicle)
+	{
+		// 차량에서 UHazardDetectorComponent 찾기
+		UHazardDetectorComponent* HazardDetector = TargetVehicle->FindComponentByClass<UHazardDetectorComponent>();
+
+		if (HazardDetector)
+		{
+			// 팀원이 열어둔 OnHazardDetected 델리게이트에 내 콜백 함수 연결
+			HazardDetector->OnHazardDetected.AddDynamic(this, &UAgentDataLogger::OnHazardEventReceived);
+			UE_LOG(LogTemp, Log, TEXT("DataLogger: Hazard Detector에 성공적으로 바인딩되었습니다."));
+		}
 	}
 }
 
@@ -52,7 +73,7 @@ void UAgentDataLogger::TickComponent(float DeltaTime, ELevelTick TickType, FActo
 	{
 		AppendRow();
 		TimeSinceLastSave -= SaveInterval;
-
+/*
 		// ---------------------------------------------------------
 		// 2. [VFX 추가] 이동 궤적 시각화 (디버그 스피어)
 		// ---------------------------------------------------------
@@ -74,6 +95,7 @@ void UAgentDataLogger::TickComponent(float DeltaTime, ELevelTick TickType, FActo
 			);
 		}
 		// ---------------------------------------------------------
+*/
 	}
 
 }
@@ -220,4 +242,107 @@ void UAgentDataLogger::LatLonToUtm(double Lat, double Lon, int32 Zone, double& O
 	// Southern hemisphere offset
 	if (Lat < 0.0)
 		OutNorthing += 10000000.0;
+}
+
+// 델리게이트 콜백: 위험 이벤트가 방송(Broadcast)될 때마다 자동으로 실행됨
+void UAgentDataLogger::OnHazardEventReceived(const FHazardEvent& HazardEvent)
+{
+	// 이벤트가 들어오면 바로 CSV에 기록
+	AppendHazardLog(HazardEvent);
+}
+
+
+// CSV 파일 초기화 및 첫 줄(헤더) 작성
+void UAgentDataLogger::CreateHazardLogFile()
+{
+	// [수정] Saved/Logs 가 아니라 기본 로거와 동일한 Output 폴더로 지정합니다.
+	FString Directory = FPaths::ProjectDir() / TEXT("Output");
+
+	// 폴더가 없으면 생성합니다 (안전 장치)
+	IPlatformFile& PlatformFile = FPlatformFileManager::Get().GetPlatformFile();
+	if (!PlatformFile.DirectoryExists(*Directory))
+	{
+		PlatformFile.CreateDirectory(*Directory);
+	}
+
+	FString Timestamp = FDateTime::Now().ToString(TEXT("%Y%m%d_%H%M%S"));
+
+	// 일반 주행 데이터와 구분되도록 파일명에 HazardLog 명시
+	HazardLogFilePath = Directory / FString::Printf(TEXT("HazardLog_%s.csv"), *Timestamp);
+
+	// CSV 첫 줄 (컬럼명)
+	// [수정됨] 위험 문자열과 상세 물리값(Slip, G, Yaw, CTE, Roll) 컬럼 추가
+	FString Header = TEXT("TimeStamp,Phase,ActiveHazards,Speed(km/h),World_X,World_Y,World_Z,UTM_Easting,UTM_Northing,SlipAngleDeg,LateralG,YawRate,CTE,RollDeg\n");
+	FFileHelper::SaveStringToFile(Header, *HazardLogFilePath, FFileHelper::EEncodingOptions::ForceUTF8);
+}
+
+// 전달받은 구조체 데이터를 CSV 포맷으로 변환하여 이어붙이기
+void UAgentDataLogger::AppendHazardLog(const FHazardEvent& HazardEvent)
+{
+	// 속도 단위 변환
+	float SpeedKmh = HazardEvent.Speed * 0.036f;
+
+	// 좌표 변환 (이전에 만드신 함수 호출)
+	double UtmEasting = 0.0;
+	double UtmNorthing = 0.0;
+	WorldToUtm(HazardEvent.WorldLocation, UtmEasting, UtmNorthing);
+
+	// [추가] 상태와 종류를 텍스트로 변환
+	FString PhaseStr = GetPhaseString(HazardEvent.Phase);
+	FString FlagsStr = GetHazardFlagsString(HazardEvent.ActiveFlags);
+
+	// 구조체의 모든 필드를 CSV 문자열로 포맷팅
+	// %s에 FString을 넣을 때는 반드시 앞에 *를 붙여야 합니다.
+	FString Row = FString::Printf(TEXT("%f,%s,%s,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f\n"),
+		HazardEvent.TimeStamp,
+		*PhaseStr,             // 진입/유지/해제 텍스트
+		*FlagsStr,             // 무슨 위험인지 텍스트
+		SpeedKmh,
+		HazardEvent.WorldLocation.X,
+		HazardEvent.WorldLocation.Y,
+		HazardEvent.WorldLocation.Z,
+		UtmEasting,
+		UtmNorthing,
+		HazardEvent.SlipAngleDeg,  // 타이어 미끄러짐 각도
+		HazardEvent.LateralG,      // 횡가속도
+		HazardEvent.YawRate,       // 차량 휘청거림
+		HazardEvent.CrossTrackError, // 경로 이탈 오차 (CTE)
+		HazardEvent.RollDeg        // 전복 각도
+	);
+
+	FFileHelper::SaveStringToFile(Row, *HazardLogFilePath, FFileHelper::EEncodingOptions::ForceUTF8, &IFileManager::Get(), FILEWRITE_Append);
+}
+
+// -------------------------------------------------------------
+// [추가] Helper Functions : 숫자를 문자열로 예쁘게 변환해주는 함수
+// -------------------------------------------------------------
+
+FString UAgentDataLogger::GetPhaseString(EHazardPhase Phase) const
+{
+	switch(Phase)
+	{
+	case EHazardPhase::Enter:   return TEXT("Enter");
+	case EHazardPhase::Sustain: return TEXT("Sustain");
+	case EHazardPhase::Exit:    return TEXT("Exit");
+	default:                    return TEXT("Unknown");
+	}
+}
+
+FString UAgentDataLogger::GetHazardFlagsString(int32 Flags) const
+{
+	if (Flags == 0) return TEXT("None");
+
+	TArray<FString> ActiveHazards;
+
+	// Bitwise AND 연산(&)을 통해 어떤 위험 플래그가 켜져 있는지 각각 검사합니다.
+	if (Flags & (int32)EHazardFlags::Skid)           ActiveHazards.Add(TEXT("Skid"));
+	if (Flags & (int32)EHazardFlags::HighLateralG)   ActiveHazards.Add(TEXT("HighLatG"));
+	if (Flags & (int32)EHazardFlags::YawInstability) ActiveHazards.Add(TEXT("YawInstability"));
+	if (Flags & (int32)EHazardFlags::LaneDeparture)  ActiveHazards.Add(TEXT("LaneDeparture"));
+	if (Flags & (int32)EHazardFlags::RolloverRisk)   ActiveHazards.Add(TEXT("RolloverRisk"));
+	if (Flags & (int32)EHazardFlags::HarshManeuver)  ActiveHazards.Add(TEXT("HarshManeuver"));
+	if (Flags & (int32)EHazardFlags::FallOff)        ActiveHazards.Add(TEXT("FallOff"));
+
+	// 켜져 있는 모든 위험을 "|" 기호로 묶어서 반환합니다. (예: "Skid|LaneDeparture")
+	return FString::Join(ActiveHazards, TEXT("|"));
 }

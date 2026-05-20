@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "Components/ActorComponent.h"
+#include "Hazard/HazardTypes.h" // 팀원이 작성한 구조체/열거형 헤더 포함 필수!
 #include "AgentDataLogger.generated.h"
 
 UCLASS( ClassGroup=(Custom), meta=(BlueprintSpawnableComponent) )
@@ -35,6 +36,10 @@ private:
 	UFUNCTION(BlueprintPure, Category="Data Logger")
 	bool IsRecording() const { return bIsRecording; }
 
+	// [추가] 델리게이트에 바인딩할 콜백 함수 (반드시 UFUNCTION 매크로 필요)
+	UFUNCTION()
+	void OnHazardEventReceived(const FHazardEvent& HazardEvent);
+
 private:
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Data Logger",
@@ -62,4 +67,15 @@ private:
 	bool bIsRecording = false;
 	float TimeSinceLastSave = 0.0f;
 	float ElapsedRecordingTime = 0.0f;
+
+	// [추가] 위험 이벤트 기록용 CSV 파일 경로
+	FString HazardLogFilePath;
+
+	// [추가] 위험 이벤트 CSV 초기화 및 데이터 추가 함수
+	void CreateHazardLogFile();
+	void AppendHazardLog(const FHazardEvent& HazardEvent);
+
+	// [추가] Enum과 Bitmask를 텍스트로 변환하는 도우미 함수
+	FString GetPhaseString(EHazardPhase Phase) const;
+	FString GetHazardFlagsString(int32 Flags) const;
 };
