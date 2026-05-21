@@ -28,7 +28,7 @@ void UWeatherSubsystem::Deinitialize()
 void UWeatherSubsystem::OnWorldBeginPlay(UWorld& InWorld)
 {
 	Super::OnWorldBeginPlay(InWorld);
-	// 1. 이제 액터들이 맵에 있으므로 태양광(Directional Light)을 완벽하게 찾을 수 있습니다!
+	// 액터들이 맵에 있으므로 태양광(Directional Light)을 찾을 수 있습니다
 	for (TActorIterator<ADirectionalLight> It(&InWorld); It; ++It)
 	{
 		if (ULightComponent* LightComp = It->GetLightComponent())
@@ -38,7 +38,7 @@ void UWeatherSubsystem::OnWorldBeginPlay(UWorld& InWorld)
 		}
 	}
 
-	// 2. 시작할 때 맑음(Clear) 데이터 에셋에서 초기 조명값을 가져옵니다.
+	// 시작할 때 맑음(Clear) 데이터 에셋에서 초기 조명값을 가져옵니다.
 	if (UWeatherPresetDataAsset* ClearPreset = GetCurrentWeatherPreset())
 	{
 		TargetLightIntensity = ClearPreset->DirectionalLightIntensity;
@@ -55,6 +55,21 @@ void UWeatherSubsystem::OnWorldBeginPlay(UWorld& InWorld)
 		TargetLightIntensity = 10.0f;
 		TargetLightColor = FLinearColor::White;
 	}
+
+	//레벨에 배치되어있는 actor를 전부 돌아서 찾는다(별로 안좋은 방식같아서 차후 개선예정, 아닐 수도 있음)
+	//for (TActorIterator<AActor> It(GetWorld()); It; ++It)
+	//{
+	//	FString ClassName = It->GetClass()->GetName();
+	//
+	//	if (ClassName == TEXT("LocalFogVolume") ||
+	//		ClassName == TEXT("RuntimeVirtualTextureVolume") ||
+	//		ClassName == TEXT("VirtualHeightfieldMesh"))
+	//	{
+	//		// false(보임)를 true(숨김)
+	//		It->SetActorHiddenInGame(true);
+	//	}
+	//}
+
 }
 
 void UWeatherSubsystem::Tick(float DeltaTime)
@@ -148,6 +163,22 @@ void UWeatherSubsystem::SetWeather(EWeather NewWeather)
 
 		bIsTransitioningLight = true; // 이 순간부터 Tick 함수가 깨어나서 일을 시작합니다.
 	}
+
+	// 눈 날씨일 때 눈이 다시 나타나게 합니다.
+	//bool bIsSnow = (CurrentWeather == EWeather::Snow);
+
+	//for (TActorIterator<AActor> It(GetWorld()); It; ++It)
+	//{
+	//	FString ClassName = It->GetClass()->GetName();
+
+	//	if (ClassName == TEXT("LocalFogVolume") ||
+	//		ClassName == TEXT("RuntimeVirtualTextureVolume") ||
+	//		ClassName == TEXT("VirtualHeightfieldMesh"))
+	//	{
+	//		// bIsSnow가 true면 화면에 나타나고, false면 숨겨집니다.
+	//		It->SetActorHiddenInGame(!bIsSnow);
+	//	}
+	//}
 }
 
 
