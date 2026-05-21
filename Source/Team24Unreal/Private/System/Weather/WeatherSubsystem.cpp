@@ -57,18 +57,18 @@ void UWeatherSubsystem::OnWorldBeginPlay(UWorld& InWorld)
 	}
 
 	//레벨에 배치되어있는 actor를 전부 돌아서 찾는다(별로 안좋은 방식같아서 차후 개선예정, 아닐 수도 있음)
-	//for (TActorIterator<AActor> It(GetWorld()); It; ++It)
-	//{
-	//	FString ClassName = It->GetClass()->GetName();
-	//
-	//	if (ClassName == TEXT("LocalFogVolume") ||
-	//		ClassName == TEXT("RuntimeVirtualTextureVolume") ||
-	//		ClassName == TEXT("VirtualHeightfieldMesh"))
-	//	{
-	//		// false(보임)를 true(숨김)
-	//		It->SetActorHiddenInGame(true);
-	//	}
-	//}
+	for (TActorIterator<AActor> It(GetWorld()); It; ++It)
+	{
+		FString ClassName = It->GetClass()->GetName();
+
+		if (ClassName == TEXT("LocalFogVolume") ||
+			ClassName == TEXT("RuntimeVirtualTextureVolume") ||
+			ClassName == TEXT("VirtualHeightfieldMesh"))
+		{
+			// false(보임)를 true(숨김)
+			It->SetActorHiddenInGame(true);
+		}
+	}
 
 }
 
@@ -165,20 +165,20 @@ void UWeatherSubsystem::SetWeather(EWeather NewWeather)
 	}
 
 	// 눈 날씨일 때 눈이 다시 나타나게 합니다.
-	//bool bIsSnow = (CurrentWeather == EWeather::Snow);
+	bool bIsSnow = (CurrentWeather == EWeather::Snow);
 
-	//for (TActorIterator<AActor> It(GetWorld()); It; ++It)
-	//{
-	//	FString ClassName = It->GetClass()->GetName();
+	for (TActorIterator<AActor> It(GetWorld()); It; ++It)
+	{
+		FString ClassName = It->GetClass()->GetName();
 
-	//	if (ClassName == TEXT("LocalFogVolume") ||
-	//		ClassName == TEXT("RuntimeVirtualTextureVolume") ||
-	//		ClassName == TEXT("VirtualHeightfieldMesh"))
-	//	{
-	//		// bIsSnow가 true면 화면에 나타나고, false면 숨겨집니다.
-	//		It->SetActorHiddenInGame(!bIsSnow);
-	//	}
-	//}
+		if (ClassName == TEXT("LocalFogVolume") ||
+			ClassName == TEXT("RuntimeVirtualTextureVolume") ||
+			ClassName == TEXT("VirtualHeightfieldMesh"))
+		{
+			// bIsSnow가 true면 화면에 나타나고, false면 숨겨집니다.
+			It->SetActorHiddenInGame(!bIsSnow);
+		}
+	}
 }
 
 
