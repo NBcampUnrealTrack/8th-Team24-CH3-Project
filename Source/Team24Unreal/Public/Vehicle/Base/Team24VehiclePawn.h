@@ -19,6 +19,7 @@ struct FInputActionValue;
 class USpotLightComponent;
 class UNiagaraComponent;
 enum class EWeather : uint8;
+class UAudioComponent;
 
 DECLARE_MULTICAST_DELEGATE_OneParam(FOnTunnelStateChanged, bool);//터널 델리게이트 채널 선언
 DECLARE_MULTICAST_DELEGATE_OneParam(FOnWeatherChanged, EWeather);//날씨 델리게이트
@@ -80,6 +81,12 @@ private:
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Weather", meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<UNiagaraComponent> WeatherParticleComponent;
+
+	// ===========================================================================
+	// [Audio System] - 엔진 사운드
+	// ===========================================================================
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Audio", meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<UAudioComponent> EngineSoundComponent;
 
 	// ---------------------------------------------------------------------------
 	// [Input Actions] - 컨트롤러의 입력 신호를 수신하기 위한 input 슬롯

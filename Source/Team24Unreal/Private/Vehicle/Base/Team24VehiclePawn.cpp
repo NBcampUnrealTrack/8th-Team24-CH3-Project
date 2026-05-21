@@ -18,7 +18,8 @@
 #include "System/Weather/WeatherPresetDataAsset.h"
 #include "NiagaraComponent.h"
 #include "ChaosVehicleWheel.h"
-#include "PhysicalMaterials/PhysicalMaterial.h"//디버그용
+#include "PhysicalMaterials/PhysicalMaterial.h"
+#include "Components/AudioComponent.h"
 //팀원 코드 헤더 추가
 #include"Component/SplineFollowerComponent.h"
 #include"Sensor/CameraSensorComponent.h"
@@ -99,6 +100,12 @@ ATeam24VehiclePawn::ATeam24VehiclePawn()
 	WeatherParticleComponent->SetupAttachment(GetMesh());
 	WeatherParticleComponent->SetRelativeLocation(FVector(0.0f, 0.0f, 300.0f)); // 차 지붕 위 3m 쯤에 배치
 	WeatherParticleComponent->bAutoActivate = false; // 기본적으로 꺼둠
+
+	// [Audio] 엔진 사운드 스피커 부착
+	EngineSoundComponent = CreateDefaultSubobject<UAudioComponent>(TEXT("EngineSoundComponent"));
+	EngineSoundComponent->SetupAttachment(GetMesh());
+	EngineSoundComponent->SetRelativeLocation(FVector(150.0f,0.0f,70.0f));
+
 
 	bIsInTunnel=true;
 }
@@ -214,16 +221,17 @@ void ATeam24VehiclePawn::Tick(float Delta)
 
 	BackSpringArm->SetRelativeRotation(FRotator(0.0f, CameraYaw, 0.0f)); //보간된 값을 SetRelativeRotation으로 갱신
 
+
 	//디버그용(차량)
 	if (GEngine && ChaosVehicleMovement)
 	{
-		// 1. 현재 속도 (km/h)
+		// 현재 속도 (km/h)
 		float CurrentSpeedKmh = ChaosVehicleMovement->GetForwardSpeed() * 0.036f;
 
-		// 2. 현재 엔진 회전수(RPM)
+		// 현재 엔진 회전수(RPM)
 		float CurrentRPM = ChaosVehicleMovement->GetEngineRotationSpeed();
 
-		// 3. 현재 기어 단수 구하기
+		// 현재 기어 단수 구하기
 		int32 CurrentGear = ChaosVehicleMovement->GetCurrentGear();
 
 		// 현재 엑셀을 얼마나 밟고 있는지 (0.0 ~ 1.0) -> 사실상 가속 Cmd 값
@@ -265,6 +273,23 @@ void ATeam24VehiclePawn::Tick(float Delta)
 		// 기존 1번(Cyan), 2번(Yellow) 메시지와 겹치지 않게 Key를 3번으로 주고 초록색으로 출력합니다.
 		GEngine->AddOnScreenDebugMessage(3, 0.0f, FColor::Green,
 			FString::Printf(TEXT("[Road Surface] Material: %s | Friction: %.2f"), *MatName, RoadFriction));
+	}
+
+	//테스트용
+	if (EngineSoundComponent && ChaosVehicleMovement)
+	{
+		// 1. 피치(음높이) 조절: RPM이 올라가면 소리도 날카로워짐
+		float CurrentRPM = ChaosVehicleMovement->GetEngineRotationSpeed();
+		float MaxRPM = ChaosVehicleMovement->EngineSetup.MaxRPM;
+		float RPM_Ratio = FMath::Clamp(CurrentRPM / MaxRPM, 0.0f, 1.0f);
+
+		EngineSoundComponent->SetPitchMultiplier(FMath::Lerp(0.8f, 2.0f, RPM_Ratio));
+
+		// 가속(엑셀) 깊이에 따른 볼륨 조절: 발을 떼면 감속되며 소리가 작아짐
+		float CurrentThrottle = ChaosVehicleMovement->GetThrottleInput();
+		float TargetVolume = FMath::Lerp(0.4f, 1.0f, CurrentThrottle);
+		EngineSoundComponent->SetVolumeMultiplier(TargetVolume);
+
 	}
 }
 
