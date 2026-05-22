@@ -7,6 +7,7 @@
 #include "Vehicle/Base/Team24VehiclePawn.h"
 #include "System/Weather/WeatherSubsystem.h"
 #include "System/Weather/WeatherPresetDataAsset.h"
+#include "EngineUtils.h"
 
 // EngineUtils.h: TActorIterator (월드의 모든 액터 순회)
 #include "EngineUtils.h"
@@ -334,6 +335,17 @@ float USplineFollowerComponent::UpdateTargetSpeed(
 		}
 	}
 
+	// 과속방지턱이 전방에 있으면 그 속도로 깎아내림.
+	// 기존 SpeedLimit이 이미 더 작으면 그대로 두는 게 안전 (예: 급커브 + 과속방지턱이
+	// 겹친 상황에서 곡률 안전속도가 더 작으면 그걸 따른다)
+	const float VehicleSpeedNow = OwnerPawn.IsValid()
+		? OwnerPawn->GetVelocity().Size2D() : 0.f;
+	const float BumpSpeed = CheckSpeedBumpAhead(VehicleSpeedNow);
+	if (BumpSpeed > 0.f)
+	{
+		SpeedLimit = FMath::Min(SpeedLimit, BumpSpeed);
+	}
+
 	// 감속 vs 가속 시 다른 보간 속도
 	const float Rate = (SpeedLimit < SmoothedTargetSpeed) ? DecelRate : AccelRate;
 	SmoothedTargetSpeed = FMath::FInterpTo(SmoothedTargetSpeed, SpeedLimit, DeltaTime, Rate);
@@ -526,10 +538,6 @@ void USplineFollowerComponent::OnTunnelToggled(bool bInTunnel)
 		MaxSpeed = WeatherBase;                 // 터널 배율 해제 = 날씨 기준값 그대로
 		LookAheadBase = BaselineLookAheadBase;
 	}
-
-	UE_LOG(LogTeam24, Log,
-		TEXT("Autopilot tunnel mode: %s, MaxSpeed=%.0f, LookAhead=%.0f, WeatherBase=%.0f"),
-		bInTunnel ? TEXT("ON") : TEXT("OFF"), MaxSpeed, LookAheadBase, WeatherBase);
 }
 
 void USplineFollowerComponent::ApplyWeatherProfile(EWeather Weather)
@@ -692,7 +700,37 @@ void USplineFollowerComponent::RecoverVehicleToRoad()
 
 	// 복구 완료 후 타이머를 초기화
 	CurrentOffRoadTime = 0.f;
+}
 
-	//테스트용 디버그 메시지
-	UE_LOG(LogTeam24, Warning, TEXT("경로 이탈 감지! 마지막 정상 위치로 차량을 안전하게 복구했습니다."));
+float USplineFollowerComponent::CheckSpeedBumpAhead(float VehicleSpeed) const
+{
+	AActor* Owner = GetOwner();
+	if (!Owner)
+	{
+		return -1.f;
+	}
+
+	const float ScanDist = BumpScanBase + VehicleSpeed * BumpScanSpeedFactor;
+	const FVector OwnerLoc = Owner->GetActorLocation();
+	const FVector ForwardDir = Owner->GetActorForwardVector();
+
+	for (TActorIterator<AActor> It(GetWorld()); It; ++It)
+	{
+		AActor* Candidate = *It;
+		if (!Candidate) continue;
+
+		if (Candidate->Tags.Contains(SpeedBumpTag))
+		{
+			const FVector ToBump = Candidate->GetActorLocation() - OwnerLoc;
+			const float ForwardDot = FVector::DotProduct(ToBump, ForwardDir);
+			const FVector LateralComp = ToBump - ForwardDir * ForwardDot;
+
+			if (ForwardDot <= 0.f || ForwardDot > ScanDist) continue;
+			if (LateralComp.Size() > 800.f) continue;
+
+			return BumpSlowSpeed;
+		}
+	}
+
+	return -1.f;
 }

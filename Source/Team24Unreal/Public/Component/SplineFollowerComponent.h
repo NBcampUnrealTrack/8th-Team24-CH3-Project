@@ -52,6 +52,7 @@ public:
 
 	/* 날씨 변경 시 호출 (Pawn의 OnWeatherChangedDelegate 콜백)
 	 *  현재 날씨의 DataAsset에서 LateralFrictionScale을 읽어 적용한다. */
+	// -> 변경됨. 현재 날씨에 따라 LateralFriction을 3단계 고정값으로 설정한다.
 	void ApplyWeatherProfile(EWeather Weather);
 
 	// 도로 이탈을 허용하는 최대 시간 (몇초 뒤에 강제로 복귀 시킬껀지)
@@ -90,6 +91,10 @@ protected:
 
 	/* 오차들을 섞어 최종 핸들 입력값 [-1, +1] 계산 */
 	float BlendSteeringInput(const FSteeringErrors& Errors, float CurvHere) const;
+
+	/* 전방에 과속방지턱이 있는지 검사
+	 *  있으면 BumpSlowSpeed 반환, 없으면 -1.f 반환 (적용 안 함) */
+	float CheckSpeedBumpAhead(float VehicleSpeed) const;
 
 	/* 곡률 정보로 목표 속도 갱신 (스무딩 포함) */
 	float UpdateTargetSpeed(float CurvHere, float CurvAhead, float DeltaTime);
@@ -212,6 +217,28 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Autopilot|Curvature",
 		meta=(ClampMin="1.0", ClampMax="5.0", AllowPrivateAccess="true"))
 	float CurvaturePreviewFalloff = 1.0f;
+
+	//  파라미터 (과속방지턱)
+
+	/* 과속방지턱 감지 시 목표 속도 (cm/s) — 30km/h ≈ 830 */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Autopilot|SpeedBump",
+		meta=(AllowPrivateAccess="true"))
+	float BumpSlowSpeed = 800.f;
+
+	/* 전방 검색 기본 거리 (cm). 실제 거리 = 이 값 + 속도×Factor */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Autopilot|SpeedBump",
+		meta=(AllowPrivateAccess="true"))
+	float BumpScanBase = 1200.f;
+
+	/* 속도 비례 추가 거리 계수. 속도(cm/s) × 이 값 = 추가 검색 거리 */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Autopilot|SpeedBump",
+		meta=(AllowPrivateAccess="true"))
+	float BumpScanSpeedFactor = 1.2f;
+
+	/* 과속방지턱 식별용 태그 — 이 태그 박힌 액터를 과속방지턱으로 인식 */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Autopilot|SpeedBump",
+		meta=(AllowPrivateAccess="true"))
+	FName SpeedBumpTag = TEXT("SpeedBump");
 
 	//  파라미터 (도로 탐색)
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Autopilot|Path",
