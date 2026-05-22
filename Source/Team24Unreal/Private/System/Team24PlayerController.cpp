@@ -10,6 +10,9 @@
 #include"Sensor/SensorViewWidget.h"
 #include "DataLogger/DataViewWidget.h"
 
+// [추가] Chaos 차량 무브먼트 컴포넌트를 사용하기 위해 헤더를 포함합니다.
+#include "ChaosWheeledVehicleMovementComponent.h"
+
 void ATeam24PlayerController::BeginPlay()
 {
 	Super::BeginPlay();
@@ -136,5 +139,15 @@ void ATeam24PlayerController::UpdateDataUI() const
 
 		// 위젯에 속도 전달
 		DataViewWidget->UpdateSpeedDisplay(CurrentSpeed);
+
+		// 2. [추가] 차량에서 Chaos 무브먼트 컴포넌트를 찾아 기어 값을 가져옵니다.
+		if (UChaosWheeledVehicleMovementComponent* VehicleMovement = VehiclePawn->FindComponentByClass
+			<UChaosWheeledVehicleMovementComponent>())
+		{
+			int32 CurrentGear = VehicleMovement->GetCurrentGear();
+
+			// 위젯에 기어 값 전달
+			DataViewWidget->UpdateGearDisplay(CurrentGear);
+		}
 	}
 }
