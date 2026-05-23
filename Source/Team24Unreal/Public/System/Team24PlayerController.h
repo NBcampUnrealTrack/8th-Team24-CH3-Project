@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/PlayerController.h"
+#include "Hazard/HazardTypes.h" // [중요] 팀원 구조체 헤더 포함
 #include "Team24PlayerController.generated.h"
 
 class UInputMappingContext;
@@ -77,6 +78,9 @@ protected:
 	UFUNCTION()
 	void OnPawnDestroyed(AActor* DestroyedPawn); // 차량이 파괴되었을 때 호출되는 Respawn 로직입니다.
 
+	// [추가] 현재 발동 중인 모든 위험을 기억하는 비트마스크 변수
+	int32 CurrentHazardFlags = 0;
+
 public:
 	// ---------------------------------------------------------------------------
 	// 센서(카메라/라이다) 뷰포트 토글 및 상태 확인 함수
@@ -104,4 +108,8 @@ public:
 
 	// 데이터를 업데이트할 함수
 	void UpdateDataUI() const;
+
+	// [추가] 델리게이트 콜백 함수 (반드시 UFUNCTION 필요!)
+	UFUNCTION()
+	void OnHazardEventReceived(const FHazardEvent& HazardEvent);
 };

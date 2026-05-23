@@ -2,6 +2,7 @@
 
 #include "DataLogger/DataViewWidget.h"
 #include "Components/TextBlock.h"
+#include "Components/Image.h" // [추가] UImage 관련 기능을 사용하기 위해 포함합니다.
 
 void UDataViewWidget::UpdateSpeedDisplay(float NewSpeed)
 {
@@ -53,5 +54,22 @@ void UDataViewWidget::UpdateGearDisplay(int32 NewGear)
 		}
 
 		GearText->SetText(FText::FromString(GearString));
+	}
+}
+
+void UDataViewWidget::SetLaneWarningActive(bool bIsActive)
+{
+	if (LaneWarningImage)
+	{
+		// bIsActive가 true면 화면에 보이고, false면 화면에서 숨깁니다.
+		LaneWarningImage->SetVisibility(bIsActive ? ESlateVisibility::HitTestInvisible : ESlateVisibility::Hidden);
+	}
+}
+
+void UDataViewWidget::SetGeneralWarningActive(bool bIsActive)
+{
+	if (GeneralWarningImage)
+	{
+		GeneralWarningImage->SetVisibility(bIsActive ? ESlateVisibility::HitTestInvisible : ESlateVisibility::Hidden);
 	}
 }

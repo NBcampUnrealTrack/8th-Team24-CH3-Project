@@ -7,11 +7,12 @@
 #include "Blueprint/UserWidget.h"
 #include "Kismet/GameplayStatics.h"
 #include "GameFramework/PlayerStart.h"
-#include"Sensor/SensorViewWidget.h"
+#include "Sensor/SensorViewWidget.h"
 #include "DataLogger/DataViewWidget.h"
 
 // [추가] Chaos 차량 무브먼트 컴포넌트를 사용하기 위해 헤더를 포함합니다.
 #include "ChaosWheeledVehicleMovementComponent.h"
+#include "Component/HazardDetectorComponent.h" // 팀원 컴포넌트 헤더
 
 void ATeam24PlayerController::BeginPlay()
 {
@@ -42,6 +43,14 @@ void ATeam24PlayerController::BeginPlay()
 		}
 	}
 	GetWorldTimerManager().SetTimer(DataUpdateTimerHandle, this, &ATeam24PlayerController::UpdateDataUI, 0.1f, true);
+
+	if (VehiclePawn)
+	{
+		if (UHazardDetectorComponent* HazardDetector = VehiclePawn->FindComponentByClass<UHazardDetectorComponent>())
+		{
+			HazardDetector->OnHazardDetected.AddDynamic(this, &ATeam24PlayerController::OnHazardEventReceived);
+		}
+	}
 }
 
 void ATeam24PlayerController::SetupInputComponent()
@@ -149,5 +158,34 @@ void ATeam24PlayerController::UpdateDataUI() const
 			// 위젯에 기어 값 전달
 			DataViewWidget->UpdateGearDisplay(CurrentGear);
 		}
+	}
+}
+
+void ATeam24PlayerController::OnHazardEventReceived(const FHazardEvent& HazardEvent)
+{
+	// 1. 이벤트의 상태(Phase)에 따라 현재 활성화된 위험(CurrentHazardFlags)을 업데이트합니다.
+	if (HazardEvent.Phase == EHazardPhase::Enter)
+	{
+		// 비트 OR 연산: 새 위험을 추가합니다.
+		CurrentHazardFlags |= HazardEvent.ActiveFlags;
+	}
+	else if (HazardEvent.Phase == EHazardPhase::Exit)
+	{
+		// 비트 AND NOT 연산: 해당 위험만 뺍니다. (다른 위험은 유지됨)
+		CurrentHazardFlags &= ~HazardEvent.ActiveFlags;
+	}
+
+	// 2. 그룹화 로직 (UI 갱신)
+	if (DataViewWidget)
+	{
+		// '경로 이탈' 비트가 하나라도 켜져 있는지 확인
+		bool bLaneDeparture = (CurrentHazardFlags & (int32)EHazardFlags::LaneDeparture) != 0;
+
+		// '경로 이탈'을 제외한(~) 나머지 비트(미끄러짐, 횡G, 추락 등) 중 하나라도 켜져 있는지 확인
+		bool bGeneralHazard = (CurrentHazardFlags & ~(int32)EHazardFlags::LaneDeparture) != 0;
+
+		// 위젯 함수 호출
+		DataViewWidget->SetLaneWarningActive(bLaneDeparture);
+		DataViewWidget->SetGeneralWarningActive(bGeneralHazard);
 	}
 }
