@@ -133,7 +133,7 @@ void ATeam24VehiclePawn::SetupPlayerInputComponent(UInputComponent* PlayerInputC
 		EnhancedInputComponent->BindAction(CyclePresetAction, ETriggerEvent::Started, this, &ATeam24VehiclePawn::CyclePreset);
 		EnhancedInputComponent->BindAction(CycleLidarPresetAction, ETriggerEvent::Started, this, &ATeam24VehiclePawn::CycleLidarPreset);
 
-// ---------------------------------------------------------------------------
+        // ---------------------------------------------------------------------------
 		// 작동 원리
 		// ---------------------------------------------------------------------------
 		// 1. 규칙 제출 (Controller): 게임 시작 시, 어떤 키가 어떤 신호(InputAction)를 발생시킬지 적힌 사전(MappingContext)을 엔진에 등록이 됩니다.
@@ -190,6 +190,22 @@ void ATeam24VehiclePawn::BeginPlay()
 		WeatherSub->RegisterVehicle(this);
 	}
 
+	if (!IsPlayerControlled())
+	{
+		// 카메라 및 스프링암 파괴
+		if (FrontSpringArm) FrontSpringArm->DestroyComponent();
+		if (BackSpringArm) BackSpringArm->DestroyComponent();
+
+		// 무거운 센서 및 오디오 파괴
+		if (EngineSoundComponent) EngineSoundComponent->DestroyComponent();
+		if (LidarSensor) LidarSensor->DestroyComponent();
+		if (CameraSensor) CameraSensor->DestroyComponent();
+		if (DataLogger) DataLogger->DestroyComponent();
+		if (WeatherParticleComponent) WeatherParticleComponent->DestroyComponent();
+		// 최적화 성공 확인용 로그
+		UE_LOG(LogTeam24, Log, TEXT("NPC 차량 감지: 불필요한 카메라 및 센서를 파괴하여 프레임을 최적화했습니다."));
+	}
+
 	//시작하자마자 View가 보이게 하는 부분
 	DoToggleSensorView();
 	DoToggleLidarView();
@@ -215,12 +231,14 @@ void ATeam24VehiclePawn::Tick(float Delta)
     //땅에 있을 때: 마찰력을 낮게 돌려주어 정상적인 주행과 회전이 가능하게 합니다.
     //즉, 공기마찰력이 크면 가기 힘든거 처럼 바퀴를 못움직이게 한다
 
-	float CameraYaw = BackSpringArm->GetRelativeRotation().Yaw; //BackSpringArm의 상대적인 Yaw 값을 체크
-	CameraYaw = FMath::FInterpTo(CameraYaw, 0.0f, Delta, 1.0f);
-	//현재 Yaw 값을 프레임당 일정 수치만큼 0으로 보간하여, 사용자가 조작하지 않을 때 카메라가 서서히 차량 정면을 바라보게 구현되었습니다.
+	if (IsValid(BackSpringArm))
+	{
+		float CameraYaw = BackSpringArm->GetRelativeRotation().Yaw; //BackSpringArm의 상대적인 Yaw 값을 체크
+		CameraYaw = FMath::FInterpTo(CameraYaw, 0.0f, Delta, 1.0f);
+		//현재 Yaw 값을 프레임당 일정 수치만큼 0으로 보간하여, 사용자가 조작하지 않을 때 카메라가 서서히 차량 정면을 바라보게 구현되었습니다.
 
-	BackSpringArm->SetRelativeRotation(FRotator(0.0f, CameraYaw, 0.0f)); //보간된 값을 SetRelativeRotation으로 갱신
-
+		BackSpringArm->SetRelativeRotation(FRotator(0.0f, CameraYaw, 0.0f)); //보간된 값을 SetRelativeRotation으로 갱신
+	}
 
 	//디버그용(차량)
 	if (GEngine && ChaosVehicleMovement)
@@ -518,7 +536,7 @@ void ATeam24VehiclePawn::SetInTunnel(bool bNewInTunnel)
 		BrakeLights(false);
 	}
 	//파티클 제어(터널)
-	if (WeatherParticleComponent)
+	if (IsValid(WeatherParticleComponent))
 	{
 		if (bIsInTunnel)
 		{
@@ -572,7 +590,7 @@ void ATeam24VehiclePawn::ApplyWeather(EWeather Weather)
 	}
 
 	// 파티클 시스템 제어
-	if (WeatherParticleComponent)
+	if (IsValid(WeatherParticleComponent))
 	{
 		// 맑음(Clear)처럼 에디터에서 파티클을 비워뒀다면 (None / nullptr), else문으로 빠져서 꺼집니다.
 		if (Preset->WeatherParticle)
