@@ -107,7 +107,7 @@ ATeam24VehiclePawn::ATeam24VehiclePawn()
 	EngineSoundComponent->SetRelativeLocation(FVector(150.0f,0.0f,70.0f));
 
 
-	bIsInTunnel=true;
+	bIsInTunnel=false;
 }
 
 void ATeam24VehiclePawn::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)// Pawn (정확히는 Actor) 클래스 안에는 이미 뼈대로 만들어진 InputComponent가 존재해서 매개변수를 변경해줘야 한다.
@@ -241,7 +241,7 @@ void ATeam24VehiclePawn::Tick(float Delta)
 	}
 
 	//디버그용(차량)
-	if (GEngine && ChaosVehicleMovement)
+	if (GEngine && ChaosVehicleMovement && IsPlayerControlled())
 	{
 		// 현재 속도 (km/h)
 		float CurrentSpeedKmh = ChaosVehicleMovement->GetForwardSpeed() * 0.036f;
@@ -252,20 +252,20 @@ void ATeam24VehiclePawn::Tick(float Delta)
 		// 현재 기어 단수 구하기
 		int32 CurrentGear = ChaosVehicleMovement->GetCurrentGear();
 
-		// 현재 엑셀을 얼마나 밟고 있는지 (0.0 ~ 1.0) -> 사실상 가속 Cmd 값
+		// 현재 엑셀을 얼마나 밟고 있는지 (0.0 ~ 1.0)
 		float CurrentThrottle = ChaosVehicleMovement->GetThrottleInput();
 
-		// 현재 브레이크를 얼마나 밟고 있는지 (0.0 ~ 1.0) -> 사실상 감속 Cmd 값
+		// 현재 브레이크를 얼마나 밟고 있는지 (0.0 ~ 1.0)
 		float CurrentBrake = ChaosVehicleMovement->GetBrakeInput();
 
-		// 화면에 출력
+		// 화면에 출력 (구분을 위해 텍스트를 [Vehicle Status]에서 [Player Vehicle]로 살짝 바꿨습니다)
 		GEngine->AddOnScreenDebugMessage(1, 0.0f, FColor::Cyan,
-				  FString::Printf(TEXT("[Vehicle Status] Speed: %.1f km/h | RPM: %.0f | Gear: %d | Cmd: %.2f | Brake: %.2f"),
-					 CurrentSpeedKmh, CurrentRPM, CurrentGear, CurrentThrottle,CurrentBrake));
+				  FString::Printf(TEXT("[Player Vehicle] Speed: %.1f km/h | RPM: %.0f | Gear: %d | Cmd: %.2f | Brake: %.2f"),
+					 CurrentSpeedKmh, CurrentRPM, CurrentGear, CurrentThrottle, CurrentBrake));
 	}
 
 	//디버그용(타이어)
-	if (ChaosVehicleMovement->Wheels.Num() >= 4)
+	if (ChaosVehicleMovement->Wheels.Num() >= 4 && IsPlayerControlled())
 	{
 		// 각 바퀴 인스턴스에 적용된 현재 마찰력을 가져옵니다.
 		float GripFL = ChaosVehicleMovement->Wheels[0]->FrictionForceMultiplier; // 앞바퀴 좌측 (Front Left)
@@ -279,7 +279,7 @@ void ATeam24VehiclePawn::Tick(float Delta)
 				GripFL, GripFR, GripRL, GripRR));
 	}
 
-	if (ChaosVehicleMovement->Wheels.Num() > 0)
+	if (ChaosVehicleMovement->Wheels.Num() > 0 && IsPlayerControlled())
 	{
 		// 대표로 0번 바퀴(앞바퀴 좌측)가 현재 닿아있는 바닥의 피직스 머티리얼을 가져옵니다.
 		UPhysicalMaterial* ContactMat = ChaosVehicleMovement->Wheels[0]->GetContactSurfaceMaterial();
@@ -294,7 +294,7 @@ void ATeam24VehiclePawn::Tick(float Delta)
 	}
 
 	//테스트용
-	if (EngineSoundComponent && ChaosVehicleMovement)
+	if (IsValid(EngineSoundComponent) && ChaosVehicleMovement)
 	{
 		// 1. 피치(음높이) 조절: RPM이 올라가면 소리도 날카로워짐
 		float CurrentRPM = ChaosVehicleMovement->GetEngineRotationSpeed();
@@ -308,6 +308,22 @@ void ATeam24VehiclePawn::Tick(float Delta)
 		float TargetVolume = FMath::Lerp(0.4f, 1.0f, CurrentThrottle);
 		EngineSoundComponent->SetVolumeMultiplier(TargetVolume);
 
+	}
+
+	// 자동차 본체가브레이크 값을 감지하여 브레이크 등 제어
+	if (ChaosVehicleMovement)
+	{
+		float ActualBrake = ChaosVehicleMovement->GetBrakeInput();
+
+		// 카오스가 오토 파킹으로 잡은 브레이크든, AI가 명령한 브레이크든 값이 증가하면 켜집니다.
+		if (ActualBrake > 0.0f || bIsInTunnel)
+		{
+			BrakeLights(true);
+		}
+		else
+		{
+			BrakeLights(false);
+		}
 	}
 }
 
@@ -462,7 +478,14 @@ void ATeam24VehiclePawn::DoBrakeStart()
 
 void ATeam24VehiclePawn::DoBrakeStop()
 {
-	BrakeLights(false);
+	if (bIsInTunnel)
+	{
+		BrakeLights(true);
+	}
+	else
+	{
+		BrakeLights(false);
+	}
 	//블루프린트에 구현된 브레이크 등을 끔
 	ChaosVehicleMovement->SetBrakeInput(0.0f);//이거 확인해보기 있어야하는지 굳이?
 }

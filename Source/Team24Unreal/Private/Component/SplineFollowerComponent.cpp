@@ -354,7 +354,7 @@ float USplineFollowerComponent::UpdateTargetSpeed(
 	{
 		SpeedLimit = FMath::Min(SpeedLimit, VehicleAheadSpeed);
 	}
-	
+
 	// 감속 vs 가속 시 다른 보간 속도
 	const float Rate = (SpeedLimit < SmoothedTargetSpeed) ? DecelRate : AccelRate;
 	SmoothedTargetSpeed = FMath::FInterpTo(SmoothedTargetSpeed, SpeedLimit, DeltaTime, Rate);
@@ -366,6 +366,14 @@ void USplineFollowerComponent::ApplySpeedCommand(float TargetSpeed, float Curren
 {
 	ATeam24VehiclePawn* Pawn = OwnerPawn.Get();
 	if (!Pawn) return;
+
+	// 정차 예외 처리 - 앞차 때문에 멈춰야 하거나 목적지 부근에서 목표 속도가 0에 수렴할 때
+	if (TargetSpeed < 10.f)
+	{
+		Pawn->DoThrottle(0.f);
+		Pawn->DoBrake(1.f); // AI가 명시적으로 1.0의 브레이크를 적용합니다.
+		return;
+	}
 
 	// 속도 차이를 [-1, +1] 명령으로 변환
 	const float Cmd = FMath::Clamp(
