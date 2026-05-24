@@ -96,6 +96,10 @@ protected:
 	 *  있으면 BumpSlowSpeed 반환, 없으면 -1.f 반환 (적용 안 함) */
 	float CheckSpeedBumpAhead(float VehicleSpeed) const;
 
+	/* 전방에 NPC 차량이 있는지 검사
+ *  있으면 따라가야 할 목표 속도 반환, 없으면 -1.f 반환 */
+	float CheckVehicleAhead(float VehicleSpeed) const;
+
 	/* 곡률 정보로 목표 속도 갱신 (스무딩 포함) */
 	float UpdateTargetSpeed(float CurvHere, float CurvAhead, float DeltaTime);
 
@@ -239,6 +243,33 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Autopilot|SpeedBump",
 		meta=(AllowPrivateAccess="true"))
 	FName SpeedBumpTag = TEXT("SpeedBump");
+
+	//  파라미터 (전방 차량 — ACC)
+
+	/* 전방 NPC 차량 식별용 태그 */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Autopilot|Vehicle",
+		meta=(AllowPrivateAccess="true"))
+	FName NPCVehicleTag = TEXT("NPCVehicle");
+
+	/* 전방 차량 검색 기본 거리 (cm) */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Autopilot|Vehicle",
+		meta=(AllowPrivateAccess="true"))
+	float VehicleScanBase = 1500.f;
+
+	/* 검색 거리에 추가될 속도 비례 계수 */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Autopilot|Vehicle",
+		meta=(AllowPrivateAccess="true"))
+	float VehicleScanSpeedFactor = 1.2f;
+
+	/* 본 차량이 NPC 뒤에서 유지할 최소 차간거리 (cm) */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Autopilot|Vehicle",
+		meta=(AllowPrivateAccess="true"))
+	float MinFollowGap = 800.f;
+
+	/* 차간거리 안전 마진 — 이 거리 안에 NPC 있으면 정지에 가깝게 */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Autopilot|Vehicle",
+		meta=(AllowPrivateAccess="true"))
+	float StopGap = 400.f;
 
 	//  파라미터 (도로 탐색)
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Autopilot|Path",

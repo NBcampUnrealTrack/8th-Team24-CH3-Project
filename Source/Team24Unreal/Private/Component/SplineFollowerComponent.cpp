@@ -346,6 +346,15 @@ float USplineFollowerComponent::UpdateTargetSpeed(
 		SpeedLimit = FMath::Min(SpeedLimit, BumpSpeed);
 	}
 
+	// 전방 NPC 차량 감지 — ACC (Adaptive Cruise Control)
+	//   NPC 없으면 -1, 있으면 0~NPC속도 사이 값 반환
+	//   기존 SpeedLimit이 더 작으면 그대로 둠 (FMath::Min)
+	const float VehicleAheadSpeed = CheckVehicleAhead(VehicleSpeedNow);
+	if (VehicleAheadSpeed >= 0.f)
+	{
+		SpeedLimit = FMath::Min(SpeedLimit, VehicleAheadSpeed);
+	}
+	
 	// 감속 vs 가속 시 다른 보간 속도
 	const float Rate = (SpeedLimit < SmoothedTargetSpeed) ? DecelRate : AccelRate;
 	SmoothedTargetSpeed = FMath::FInterpTo(SmoothedTargetSpeed, SpeedLimit, DeltaTime, Rate);
@@ -733,4 +742,69 @@ float USplineFollowerComponent::CheckSpeedBumpAhead(float VehicleSpeed) const
 	}
 
 	return -1.f;
+}
+
+float USplineFollowerComponent::CheckVehicleAhead(float VehicleSpeed) const
+{
+	AActor* Owner = GetOwner();
+	if (!Owner) return -1.f;
+
+	const float ScanDist = VehicleScanBase + VehicleSpeed * VehicleScanSpeedFactor;
+	const FVector OwnerLoc = Owner->GetActorLocation();
+	const FVector ForwardDir = Owner->GetActorForwardVector();
+
+	// 가장 가까운 전방 NPC 추적
+	AActor* ClosestNPC = nullptr;
+	float ClosestDist = FLT_MAX;
+
+	for (TActorIterator<AActor> It(GetWorld()); It; ++It)
+	{
+		AActor* Candidate = *It;
+		if (!Candidate) continue;
+
+		// 자기 자신 제외
+		if (Candidate == Owner) continue;
+
+		if (!Candidate->Tags.Contains(NPCVehicleTag)) continue;
+
+		const FVector ToNPC = Candidate->GetActorLocation() - OwnerLoc;
+		const float ForwardDot = FVector::DotProduct(ToNPC, ForwardDir);
+
+		// 뒤에 있거나 검색범위 밖이면 무시
+		if (ForwardDot <= 0.f || ForwardDot > ScanDist) continue;
+
+		// 옆 차선 무시 (8m 안쪽만)
+		const FVector LateralComp = ToNPC - ForwardDir * ForwardDot;
+		if (LateralComp.Size() > 800.f) continue;
+
+		// 가장 가까운 NPC 갱신
+		if (ForwardDot < ClosestDist)
+		{
+			ClosestDist = ForwardDot;
+			ClosestNPC = Candidate;
+		}
+	}
+
+	if (!ClosestNPC) return -1.f;
+
+	// NPC 속도 측정 (XY 평면, 수직 성분 제외)
+	const float NPCSpeed = ClosestNPC->GetVelocity().Size2D();
+
+	// 거리에 따라 목표 속도 결정
+	//   ClosestDist <= StopGap        → 정지
+	//   ClosestDist >= MinFollowGap   → NPC 속도에 맞춤
+	//   그 사이                       → 보간
+	if (ClosestDist <= StopGap)
+	{
+		return 0.f;
+	}
+
+	if (ClosestDist >= MinFollowGap)
+	{
+		return NPCSpeed;
+	}
+
+	// 보간 구간: StopGap~MinFollowGap 사이
+	const float Ratio = (ClosestDist - StopGap) / (MinFollowGap - StopGap);
+	return NPCSpeed * Ratio;
 }
