@@ -209,6 +209,9 @@ void ATeam24VehiclePawn::BeginPlay()
 	//시작하자마자 View가 보이게 하는 부분
 	DoToggleSensorView();
 	DoToggleLidarView();
+	// BEV 스캔이 위젯 토글과 무관하게 반드시 시작되도록 보장
+	if (LidarSensor)
+		LidarSensor->StartScan();
 }
 
 void ATeam24VehiclePawn::EndPlay(EEndPlayReason::Type EndPlayReason)

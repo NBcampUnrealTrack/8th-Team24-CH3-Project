@@ -31,7 +31,6 @@ void ULidarSensorComponent::CyclePreset()
 {
 	static const TArray<ELidarSensorPreset> List =
 	{
-		ELidarSensorPreset::Custom,
 		ELidarSensorPreset::VelodyneVLP16,
 		ELidarSensorPreset::VelodyneVLP32,
 		ELidarSensorPreset::OusterOS1_64,
@@ -423,13 +422,19 @@ void ULidarSensorComponent::ApplyWeatherProfile(bool bIsWeatherChanged) // 날�
 	}
 	else
 	{
-		Config.NoiseStdDev = CachedWeatherNoise;
-		Config.MaxRange = CachedWeatherMaxRange;
+		// CachedWeatherMaxRange가 0이면 날씨가 한 번도 적용된 적 없음 → 복구 생략
+		if (CachedWeatherMaxRange > 0.f)
+		{
+			Config.NoiseStdDev = CachedWeatherNoise;
+			Config.MaxRange = CachedWeatherMaxRange;
+			CachedWeatherNoise = 0.f;
+			CachedWeatherMaxRange = 0.f;
 
-		BevConfig.ViewRange = Config.MaxRange;
-		if (BevRenderer)
-			BevRenderer->UpdateConfig(BevConfig);
+			BevConfig.ViewRange = Config.MaxRange;
+			if (BevRenderer)
+				BevRenderer->UpdateConfig(BevConfig);
 
-		RebuildDirectionCache();
+			RebuildDirectionCache();
+		}
 	}
 }
