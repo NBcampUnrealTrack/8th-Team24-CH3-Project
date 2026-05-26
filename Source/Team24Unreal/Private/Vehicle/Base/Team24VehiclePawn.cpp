@@ -244,58 +244,79 @@ void ATeam24VehiclePawn::Tick(float Delta)
 	}
 
 	//디버그용(차량)
-	if (GEngine && ChaosVehicleMovement && IsPlayerControlled())
-	{
-		// 현재 속도 (km/h)
-		float CurrentSpeedKmh = ChaosVehicleMovement->GetForwardSpeed() * 0.036f;
-
-		// 현재 엔진 회전수(RPM)
-		float CurrentRPM = ChaosVehicleMovement->GetEngineRotationSpeed();
-
-		// 현재 기어 단수 구하기
-		int32 CurrentGear = ChaosVehicleMovement->GetCurrentGear();
-
-		// 현재 엑셀을 얼마나 밟고 있는지 (0.0 ~ 1.0)
-		float CurrentThrottle = ChaosVehicleMovement->GetThrottleInput();
-
-		// 현재 브레이크를 얼마나 밟고 있는지 (0.0 ~ 1.0)
-		float CurrentBrake = ChaosVehicleMovement->GetBrakeInput();
-
-		// 화면에 출력 (구분을 위해 텍스트를 [Vehicle Status]에서 [Player Vehicle]로 살짝 바꿨습니다)
-		GEngine->AddOnScreenDebugMessage(1, 0.0f, FColor::Cyan,
-				  FString::Printf(TEXT("[Player Vehicle] Speed: %.1f km/h | RPM: %.0f | Gear: %d | Cmd: %.2f | Brake: %.2f"),
-					 CurrentSpeedKmh, CurrentRPM, CurrentGear, CurrentThrottle, CurrentBrake));
-	}
+	//if (GEngine && ChaosVehicleMovement && IsPlayerControlled())
+	//{
+	//	// 현재 속도 (km/h)
+	//	float CurrentSpeedKmh = ChaosVehicleMovement->GetForwardSpeed() * 0.036f;
+//
+	//	// 현재 엔진 회전수(RPM)
+	//	float CurrentRPM = ChaosVehicleMovement->GetEngineRotationSpeed();
+//
+	//	// 현재 기어 단수 구하기
+	//	int32 CurrentGear = ChaosVehicleMovement->GetCurrentGear();
+//
+	//	// 현재 엑셀을 얼마나 밟고 있는지 (0.0 ~ 1.0)
+	//	float CurrentThrottle = ChaosVehicleMovement->GetThrottleInput();
+//
+	//	// 현재 브레이크를 얼마나 밟고 있는지 (0.0 ~ 1.0)
+	//	float CurrentBrake = ChaosVehicleMovement->GetBrakeInput();
+//
+	//	// 화면에 출력 (구분을 위해 텍스트를 [Vehicle Status]에서 [Player Vehicle]로 살짝 바꿨습니다)
+	//	GEngine->AddOnScreenDebugMessage(1, 0.0f, FColor::Cyan,
+	//			  FString::Printf(TEXT("[Player Vehicle] Speed: %.1f km/h | RPM: %.0f | Gear: %d | Cmd: %.2f | Brake: %.2f"),
+	//				 CurrentSpeedKmh, CurrentRPM, CurrentGear, CurrentThrottle, CurrentBrake));
+	//}
 
 	//디버그용(타이어)
-	if (ChaosVehicleMovement->Wheels.Num() >= 4 && IsPlayerControlled())
+	//if (ChaosVehicleMovement->Wheels.Num() >= 4 && IsPlayerControlled())
+	//{
+	//	// 각 바퀴 인스턴스에 적용된 현재 마찰력을 가져옵니다.
+	//	float GripFL = ChaosVehicleMovement->Wheels[0]->FrictionForceMultiplier; // 앞바퀴 좌측 (Front Left)
+	//	float GripFR = ChaosVehicleMovement->Wheels[1]->FrictionForceMultiplier; // 앞바퀴 우측 (Front Right)
+	//	float GripRL = ChaosVehicleMovement->Wheels[2]->FrictionForceMultiplier; // 뒷바퀴 좌측 (Rear Left)
+	//	float GripRR = ChaosVehicleMovement->Wheels[3]->FrictionForceMultiplier; // 뒷바퀴 우측 (Rear Right)
+//
+	//	// 기존 메시지와 겹치지 않도록 첫 번째 인자(Key)를 2번으로 설정하고 노란색으로 출력합니다.
+	//	GEngine->AddOnScreenDebugMessage(2, 0.0f, FColor::Yellow,
+	//		FString::Printf(TEXT("[Tire Grip] Front(L/R): %.2f / %.2f | Rear(L/R): %.2f / %.2f"),
+	//			GripFL, GripFR, GripRL, GripRR));
+	//}
+
+	//if (ChaosVehicleMovement->Wheels.Num() > 0 && IsPlayerControlled())
+	//{
+	//	// 대표로 0번 바퀴(앞바퀴 좌측)가 현재 닿아있는 바닥의 피직스 머티리얼을 가져옵니다.
+	//	UPhysicalMaterial* ContactMat = ChaosVehicleMovement->Wheels[0]->GetContactSurfaceMaterial();
+//
+	//	// 바닥 재질(PM)이 인식되면 그 이름과 마찰력을, 허공이거나 없으면 None과 1.0f를 반환합니다.
+	//	FString MatName = ContactMat ? ContactMat->GetName() : TEXT("None");
+	//	float RoadFriction = ContactMat ? ContactMat->Friction : 1.0f;
+//
+	//	// 기존 1번(Cyan), 2번(Yellow) 메시지와 겹치지 않게 Key를 3번으로 주고 초록색으로 출력합니다.
+	//	GEngine->AddOnScreenDebugMessage(3, 0.0f, FColor::Green,
+	//		FString::Printf(TEXT("[Road Surface] Material: %s | Friction: %.2f"), *MatName, RoadFriction));
+	//}
+
+	if (GEngine && IsPlayerControlled())
 	{
-		// 각 바퀴 인스턴스에 적용된 현재 마찰력을 가져옵니다.
-		float GripFL = ChaosVehicleMovement->Wheels[0]->FrictionForceMultiplier; // 앞바퀴 좌측 (Front Left)
-		float GripFR = ChaosVehicleMovement->Wheels[1]->FrictionForceMultiplier; // 앞바퀴 우측 (Front Right)
-		float GripRL = ChaosVehicleMovement->Wheels[2]->FrictionForceMultiplier; // 뒷바퀴 좌측 (Rear Left)
-		float GripRR = ChaosVehicleMovement->Wheels[3]->FrictionForceMultiplier; // 뒷바퀴 우측 (Rear Right)
+		if (UWeatherSubsystem* WeatherSub = GetWorld()->GetSubsystem<UWeatherSubsystem>())
+		{
+			EWeather CurrentWeather = WeatherSub->GetCurrentWeather();
+			FString WeatherName;
 
-		// 기존 메시지와 겹치지 않도록 첫 번째 인자(Key)를 2번으로 설정하고 노란색으로 출력합니다.
-		GEngine->AddOnScreenDebugMessage(2, 0.0f, FColor::Yellow,
-			FString::Printf(TEXT("[Tire Grip] Front(L/R): %.2f / %.2f | Rear(L/R): %.2f / %.2f"),
-				GripFL, GripFR, GripRL, GripRR));
+			switch (CurrentWeather)
+			{
+			case EWeather::Clear: WeatherName = TEXT("맑음"); break;
+			case EWeather::Rain:  WeatherName = TEXT("비"); break;
+			case EWeather::Snow:  WeatherName = TEXT("눈"); break;
+			default:              WeatherName = TEXT("Unknown"); break;
+			}
+
+			// Key를 4번으로 고정하고, 표시 시간(TimeToDisplay)을 0.0f로 설정합니다.
+			// (0.0f는 "이번 프레임에만 띄우고 지워라"는 뜻인데, Tick에서 매 프레임 다시 그려주므로 깜빡임 없이 예쁘게 고정됩니다!)
+			GEngine->AddOnScreenDebugMessage(1, 0.0f, FColor::Green,
+				FString::Printf(TEXT("[현재 날씨]: %s"), *WeatherName));
+		}
 	}
-
-	if (ChaosVehicleMovement->Wheels.Num() > 0 && IsPlayerControlled())
-	{
-		// 대표로 0번 바퀴(앞바퀴 좌측)가 현재 닿아있는 바닥의 피직스 머티리얼을 가져옵니다.
-		UPhysicalMaterial* ContactMat = ChaosVehicleMovement->Wheels[0]->GetContactSurfaceMaterial();
-
-		// 바닥 재질(PM)이 인식되면 그 이름과 마찰력을, 허공이거나 없으면 None과 1.0f를 반환합니다.
-		FString MatName = ContactMat ? ContactMat->GetName() : TEXT("None");
-		float RoadFriction = ContactMat ? ContactMat->Friction : 1.0f;
-
-		// 기존 1번(Cyan), 2번(Yellow) 메시지와 겹치지 않게 Key를 3번으로 주고 초록색으로 출력합니다.
-		GEngine->AddOnScreenDebugMessage(3, 0.0f, FColor::Green,
-			FString::Printf(TEXT("[Road Surface] Material: %s | Friction: %.2f"), *MatName, RoadFriction));
-	}
-
 	//테스트용
 	if (IsValid(EngineSoundComponent) && ChaosVehicleMovement)
 	{
